@@ -1,134 +1,73 @@
 "use client";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { auth, db } from "../firebase/page";
-import { onAuthStateChanged, signOut } from "firebase/auth";
-import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
+import { auth, db } from "../firebase/config";
+import { doc, onSnapshot, setDoc, updateDoc, serverTimestamp } from "firebase/firestore";
 
-export default function EmployeeDashboard() {
-  const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<any>(null);
-  const [attendanceStatus, setAttendanceStatus] = useState<"checked-in" | "checked-out">("checked-out");
-  const router = useRouter();
+export default function EmployeeDash() {
+  const [status, setStatus] = useState<"Checked Out" | "Working" | "On Break">("Checked Out");
+  const [data, setData] = useState<any>(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      if (!currentUser) {
-        router.push("/");
-      } else {
-        const userDoc = await getDoc(doc(db, "users", currentUser.uid));
-        if (userDoc.exists() && userDoc.data().role === "employee") {
-          setUser(currentUser);
-          setLoading(false);
-        } else {
-          router.push("/admin");
-        }
+    // Clean code without extra markers
+    const today = new Date().toISOString().split("T")[0];
+    
+    if (!auth.currentUser) return;
+
+    const unsub = onSnapshot(doc(db, "attendance", `${auth.currentUser?.uid}_${today}`), (docSnap) => {
+      if (docSnap.exists()) {
+        const d = docSnap.data(); 
+        setData(d);
+        if (d.check_out) setStatus("Checked Out");
+        else if (d.break_start && !d.break_end) setStatus("On Break");
+        else if (d.check_in) setStatus("Working");
       }
     });
-    return () => unsubscribe();
-  }, [router]);
 
-  const handleAttendance = async () => {
-    if (!user) return;
+    return () => unsub();
+  }, []);
 
-    const today = new Date().toISOString().split("T")[0]; // "2026-05-07"
-    const attendanceRef = doc(db, "attendance", `${user.uid}_${today}`);
+  const handleAction = async (act: string) => {
+    const today = new Date().toISOString().split("T")[0];
+    const ref = doc(db, "attendance", `${auth.currentUser?.uid}_${today}`);
+    const now = new Date();
 
-    try {
-      if (attendanceStatus === "checked-out") {
-        // Check-in Logic
-        await setDoc(attendanceRef, {
-          userId: user.uid,
-          email: user.email,
-          date: today,
-          checkIn: serverTimestamp(),
-          status: "present"
-        }, { merge: true });
-        setAttendanceStatus("checked-in");
-        alert("Checked in successfully!");
-      } else {
-        // Check-out Logic
-        await setDoc(attendanceRef, {
-          checkOut: serverTimestamp(),
-        }, { merge: true });
-        setAttendanceStatus("checked-out");
-        alert("Checked out successfully!");
-      }
-    } catch (error) {
-      console.error("Error updating attendance:", error);
+    if (act === "in") {
+      const isLate = now.getHours() >= 9 && now.getMinutes() > 0;
+      await setDoc(ref, { 
+        userId: auth.currentUser?.uid, 
+        email: auth.currentUser?.email, 
+        date: today, 
+        check_in: serverTimestamp(), 
+        status: isLate ? "late" : "present" 
+      }, { merge: true });
+    } else if (act === "out") {
+      await updateDoc(ref, { check_out: serverTimestamp() });
+    } else if (act === "b_start") {
+      await updateDoc(ref, { break_start: serverTimestamp() });
+    } else if (act === "b_end") {
+      await updateDoc(ref, { break_end: serverTimestamp() });
     }
   };
 
-  if (loading) return (
-    <div className="h-screen flex items-center justify-center bg-sky-50 font-bold text-sky-800">
-      Verifying Employee Access...
-    </div>
-  );
-
   return (
-    <div className="min-h-screen bg-sky-50 p-6 md:p-10 font-sans">
-      {/* Top Header */}
-      <div className="flex justify-between items-center bg-white p-6 rounded-3xl shadow-sm border border-sky-100 mb-8">
-        <div>
-          <h1 className="text-2xl font-black text-sky-900 italic">ATTENDANCE</h1>
-          <p className="text-sm text-gray-500 font-medium">Welcome back, {user?.email}</p>
+    <div className="space-y-10">
+      <div className="bg-white rounded-[3rem] p-12 shadow-xl border border-slate-100 flex flex-col items-center text-center">
+        <div className={`w-32 h-32 rounded-full flex items-center justify-center text-5xl mb-8 shadow-inner ${status === "Working" ? "bg-emerald-50 text-emerald-500 animate-pulse" : "bg-slate-50 text-slate-300"}`}>
+          {status === "Working" ? "⚡" : "🏠"}
         </div>
-        <button 
-          onClick={() => signOut(auth)} 
-          className="bg-red-50 text-red-600 px-6 py-2 rounded-full font-bold hover:bg-red-600 hover:text-white transition-all duration-300 shadow-sm"
-        >
-          Logout
-        </button>
-      </div>
+        <h2 className="text-4xl font-black text-slate-800">{status}</h2>
+        <p className="text-slate-400 mt-2 mb-10 max-w-sm">Current shift: General (9:00 AM - 6:00 PM)</p>
 
-      {/* Main Content Area */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        
-        {/* Attendance Card */}
-        <div className="bg-white p-8 rounded-3xl shadow-xl shadow-sky-900/5 border border-sky-100 flex flex-col items-center justify-center space-y-6">
-          <div className="h-24 w-24 bg-sky-100 rounded-full flex items-center justify-center text-4xl shadow-inner">
-            {attendanceStatus === "checked-in" ? "🏢" : "🏠"}
-          </div>
-          
-          <div className="text-center">
-            <h2 className="text-xl font-bold text-gray-800">Daily Attendance</h2>
-            <p className="text-gray-500 text-sm">Status: 
-              <span className={`ml-2 font-bold ${attendanceStatus === "checked-in" ? "text-green-500" : "text-orange-500"}`}>
-                {attendanceStatus === "checked-in" ? "At Work" : "Offline"}
-              </span>
-            </p>
-          </div>
-
-          <button 
-            onClick={handleAttendance}
-            className={`w-full py-4 rounded-2xl font-black text-lg transition-all transform active:scale-95 shadow-lg ${
-              attendanceStatus === "checked-in" 
-              ? "bg-orange-500 hover:bg-orange-600 text-white shadow-orange-200" 
-              : "bg-cyan-500 hover:bg-cyan-600 text-white shadow-cyan-200"
-            }`}
-          >
-            {attendanceStatus === "checked-in" ? "CHECK OUT" : "CHECK IN"}
-          </button>
+        <div className="flex flex-wrap justify-center gap-4">
+          {status === "Checked Out" && <button onClick={() => handleAction("in")} className="px-12 py-5 bg-indigo-600 text-white rounded-3xl font-black shadow-lg hover:scale-105 transition-all">CHECK IN</button>}
+          {status === "Working" && (
+            <>
+              <button onClick={() => handleAction("b_start")} className="px-10 py-5 bg-amber-400 text-white rounded-3xl font-black hover:scale-105 transition-all">BREAK</button>
+              <button onClick={() => handleAction("out")} className="px-10 py-5 bg-slate-900 text-white rounded-3xl font-black hover:scale-105 transition-all">CHECK OUT</button>
+            </>
+          )}
+          {status === "On Break" && <button onClick={() => handleAction("b_end")} className="px-12 py-5 bg-emerald-500 text-white rounded-3xl font-black hover:scale-105 transition-all">RESUME</button>}
         </div>
-
-        {/* Stats Card */}
-        <div className="bg-blue-950 p-8 rounded-3xl shadow-2xl text-white flex flex-col justify-between">
-          <div>
-            <h3 className="text-sky-300 font-bold uppercase tracking-widest text-xs mb-2">Shift Info</h3>
-            <p className="text-3xl font-light">09:00 AM - 06:00 PM</p>
-          </div>
-          
-          <div className="pt-6 border-t border-blue-900">
-            <div className="flex justify-between text-sm mb-1">
-              <span>Weekly Progress</span>
-              <span>75%</span>
-            </div>
-            <div className="w-full bg-blue-900 h-2 rounded-full overflow-hidden">
-              <div className="bg-cyan-400 h-full w-3/4"></div>
-            </div>
-          </div>
-        </div>
-
       </div>
     </div>
   );

@@ -1,7 +1,9 @@
+// Import the functions you need from the SDKs you need
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getAuth} from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { getAuth } from "firebase/auth"; // Auth ke liye import
+import { getFirestore } from "firebase/firestore"; // Firestore ke liye import
 
+// Your web app's Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyAi0UjbmuvkADp9Sl1LG05cIhDqrFnWC8Y",
   authDomain: "employee-attendence-syst-71968.firebaseapp.com",
@@ -11,10 +13,10 @@ const firebaseConfig = {
   appId: "1:186842098953:web:7a1cf88105266b657cf7d8"
 };
 
-// Next.js mein hot reloading ke waqt app ko baar baar initialize hone se rokne ke liye:
+// Initialize Firebase (Next.js/SSR safe way)
 const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 
-// Services ko export karein taakay baqi components mein use ho sakein
+// Auth aur DB ko initialize karen
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 
