@@ -22,7 +22,7 @@ export default function Sidebar({ links }: any) {
   };
 
   return (
-    <div className="w-72 h-screen  bg-gradient-to-b from-slate-900 to-slate-800 text-white p-6 flex flex-col shadow-lg">
+    <aside className="w-72 h-screen shrink-0 overflow-y-auto bg-linear-to-b from-slate-900 to-slate-800 text-white p-6 flex flex-col shadow-lg sticky top-0">
       {/* Logo & App Name */}
       <div className="mb-8">
         <h2 className="text-3xl font-bold tracking-tight">Attendance</h2>
@@ -32,7 +32,7 @@ export default function Sidebar({ links }: any) {
       {/* User Profile */}
       <div className="bg-slate-700 rounded-xl p-4 mb-8">
         <div className="flex items-center gap-3 mb-3">
-          <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-sm font-bold">
+          <div className="w-12 h-12 rounded-lg bg-linear-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-sm font-bold">
             {getInitials(user?.email || '')}
           </div>
           <div className="flex-1 min-w-0">
@@ -70,6 +70,6 @@ export default function Sidebar({ links }: any) {
         <LogOut size={18} />
         Logout
       </button>
-    </div>
+    </aside>
   );
 }

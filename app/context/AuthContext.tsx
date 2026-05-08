@@ -44,9 +44,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         setUser(userData);
         Cookies.set("auth_token", currentUser.uid, { expires: 7 });
+        Cookies.set("user_role", role, { expires: 7 });
       } else {
         setUser(null);
         Cookies.remove("auth_token");
+        Cookies.remove("user_role");
       }
       setLoading(false);
     });
@@ -58,6 +60,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await signOut(auth);
     setUser(null);
     Cookies.remove("auth_token");
+    Cookies.remove("user_role");
   };
 
   return (

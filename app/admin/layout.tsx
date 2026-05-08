@@ -15,9 +15,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <ProtectedRoute requiredRole="admin">
-      <div className="flex">
+      <div className="flex h-screen overflow-hidden">
         <Sidebar links={links} />
-        <div className="flex-1 p-6 bg-gray-100 min-h-screen">
+        <div className="flex-1 min-w-0 overflow-auto bg-gray-100 p-6">
           {children}
         </div>
       </div>

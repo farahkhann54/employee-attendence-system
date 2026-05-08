@@ -13,10 +13,8 @@ const chartData = [
 const COLORS = ["#10b981", "#f59e0b", "#ef4444"];
 
 export default function AdminDashboard() {
-  const totalUsers = chartData.reduce((sum, item) => sum + item.value, 0);
-
   return (
-    <div className="h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6 overflow-auto">
+    <div className="h-screen bg-linear-to-br from-slate-50 to-slate-100 p-6 overflow-auto">
       <div className="max-w-full">
         {/* Header */}
         <div className="mb-6">
