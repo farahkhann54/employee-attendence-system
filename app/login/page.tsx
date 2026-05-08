@@ -1,50 +1,127 @@
 "use client";
-import { useState } from "react";
-import { auth, db } from "../firebase/config";
+
+import { useState, useEffect } from "react";
 import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth, db } from "../firebase/config";
 import { doc, getDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
+import { useAuth } from "../context/AuthContext";
 import Link from "next/link";
-import Cookies from 'js-cookie';
+import Cookies from "js-cookie";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
-const handleLogin = async (e: React.FormEvent) => {
-  e.preventDefault();
-  try {
-    const res = await signInWithEmailAndPassword(auth, email, password);
-    const userDoc = await getDoc(doc(db, "users", res.user.uid));
-    
-    if (userDoc.exists()) {
-      const userData = userDoc.data();
-      const role = userData.role;
+  const { user, loading } = useAuth();
 
-      // ✅ Cookies set karein (Expires in 7 days)
-      Cookies.set('session', res.user.uid, { expires: 7 });
-      Cookies.set('userRole', role, { expires: 7 });
-
-      router.push(role === "admin" ? "/admin" : "/employee");
+  // Redirect if already logged in
+  useEffect(() => {
+    if (!loading && user) {
+      router.push(user.role === "admin" ? "/admin" : "/employee");
     }
-  } catch (err) {
-    alert("Login failed!");
+  }, [user, loading, router]);
+
+  const handleLogin = async () => {
+    try {
+      setError("");
+      setIsLoading(true);
+      const userCred = await signInWithEmailAndPassword(auth, email, password);
+
+      // 🔥 get role from Firestore
+      const docRef = doc(db, "users", userCred.user.uid);
+      const docSnap = await getDoc(docRef);
+
+      const role = docSnap.data()?.role;
+
+      // Set cookie for middleware
+      Cookies.set("auth_token", userCred.user.uid, { expires: 7 });
+
+      if (role === "admin") {
+        router.push("/admin");
+      } else {
+        router.push("/employee");
+      }
+    } catch (error: any) {
+      setError(error.message);
+      setIsLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="text-center">
+          <p className="text-lg font-semibold">Loading...</p>
+        </div>
+      </div>
+    );
   }
-};
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 font-sans antialiased">
-      <div className="w-full max-w-md bg-white rounded-[2.5rem] p-12 shadow-2xl shadow-slate-200/60 border border-slate-100">
-        <div className="text-center mb-10">
-          <h1 className="text-4xl font-black text-indigo-600 tracking-tighter italic">CHRONOS</h1>
-          <p className="text-slate-400 font-medium mt-2">Sign in to your dashboard</p>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+      <div className="w-full max-w-md">
+        {/* Logo Section */}
+        <div className="text-center mb-8">
         </div>
-        <form onSubmit={handleLogin} className="space-y-6">
-          <input type="email" placeholder="Email" required className="w-full p-4 bg-slate-50 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all" onChange={(e) => setEmail(e.target.value)} />
-          <input type="password" placeholder="Password" required className="w-full p-4 bg-slate-50 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all" onChange={(e) => setPassword(e.target.value)} />
-          <button className="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black text-lg hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-indigo-100">CONTINUE</button>
-        </form>
-        <p className="mt-8 text-center text-sm text-slate-500">Need access? <Link href="/signup" className="text-indigo-600 font-bold underline">Create Account</Link></p>
+
+        {/* Login Card */}
+        <div className="bg-white shadow-2xl rounded-2xl p-10">
+          <h2 className="text-3xl font-bold text-slate-900 mb-2 text-center">Welcome Back</h2>
+          <p className="text-center text-slate-600 text-sm mb-8">Sign in to your account to continue</p>
+
+          {error && (
+            <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded">
+              <p className="text-sm font-medium">{error}</p>
+            </div>
+          )}
+
+          <div className="space-y-5">
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-2">Email Address</label>
+              <input
+                type="email"
+                placeholder="you@example.com"
+                value={email}
+                className="w-full px-4 py-3 border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-2">Password</label>
+              <input
+                type="password"
+                placeholder="Enter your password"
+                value={password}
+                className="w-full px-4 py-3 border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+
+            <button
+              onClick={handleLogin}
+              disabled={isLoading}
+              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold py-3 rounded-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed text-base"
+            >
+              {isLoading ? "Signing in..." : "Sign In"}
+            </button>
+          </div>
+
+          <div className="mt-6 pt-6 border-t border-slate-200">
+            <p className="text-center text-slate-600 text-sm">
+              Don't have an account?{" "}
+              <Link href="/signup" className="text-blue-600 font-semibold hover:text-blue-700 transition">
+                Create one
+              </Link>
+            </p>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <p className="text-center text-slate-400 text-xs mt-8">© 2025 Employee Attendance System. All rights reserved.</p>
       </div>
     </div>
   );
