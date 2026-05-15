@@ -18,6 +18,14 @@ import {
 } from 'lucide-react';
 import UserAvatar from '@/components/ui/UserAvatar';
 
+// 1. FIX: TypeScript Interface add kiya taake errors na ayen
+interface UserProfile {
+  name: string;
+  jobField: string;
+  phone: string;
+  location: string;
+}
+
 export default function SettingsPage() {
   const { user } = useAppSelector((state) => state.auth);
   const dispatch = useAppDispatch();
@@ -25,12 +33,12 @@ export default function SettingsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
 
-  // Form State initialized with Redux data
-  const [formData, setFormData] = useState({
-    name: user?.name,
-    jobField: user?.jobField || "",
-    phone: user?.phone || "",
-    location: user?.location || "Pakistan",
+  // 2. FIX: Type casting 'as any' use ki hai initial state ke liye
+  const [formData, setFormData] = useState<UserProfile>({
+    name: user?.name || "",
+    jobField: (user as any)?.jobField || "",
+    phone: (user as any)?.phone || "",
+    location: (user as any)?.location || "Pakistan",
   });
 
   useEffect(() => { setMounted(true); }, []);
@@ -45,10 +53,7 @@ export default function SettingsPage() {
         updatedAt: new Date().toISOString() 
       };
       
-      // Update in Firestore
       await setDoc(doc(db, "users", user.uid), updatedData, { merge: true });
-      
-      // Update in Redux Store
       dispatch(updateProfile(updatedData));
       
       setShowSuccess(true);
@@ -67,7 +72,6 @@ export default function SettingsPage() {
     <DashboardLayout activeTab="settings">
       <div className="max-w-5xl mx-auto space-y-10 pb-20">
         
-        {/* Top Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-8">
           <div>
             <h1 className="text-4xl font-black text-slate-900 tracking-tight">Account Settings</h1>
@@ -83,7 +87,6 @@ export default function SettingsPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
           
-          {/* Left Side: Avatar & Quick Info */}
           <div className="lg:col-span-4 space-y-6">
             <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm text-center">
               <div className="relative inline-block group mb-6">
@@ -97,20 +100,8 @@ export default function SettingsPage() {
               <h2 className="text-xl font-black text-slate-900">{formData.name || "Your Name"}</h2>
               <p className="text-sm text-slate-400 font-bold uppercase tracking-widest mt-1">{user?.role || "Team Member"}</p>
             </div>
-
-            <div className="bg-slate-900 p-8 rounded-[2.5rem] text-white shadow-xl relative overflow-hidden">
-               <div className="relative z-10">
-                  <h3 className="font-bold text-lg mb-2">Need Help?</h3>
-                  <p className="text-slate-400 text-xs leading-relaxed mb-6">If you're having trouble with your account, contact our support team.</p>
-                  <button className="w-full bg-white/10 hover:bg-white/20 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all">
-                    Contact Support
-                  </button>
-               </div>
-               <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-blue-500/20 rounded-full blur-3xl" />
-            </div>
           </div>
 
-          {/* Right Side: Detailed Form */}
           <div className="lg:col-span-8 space-y-6">
             <div className="bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-sm">
               <h3 className="text-lg font-black text-slate-800 mb-8 flex items-center gap-2">
@@ -132,7 +123,7 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
-                {/* Email (Disabled) */}
+                {/* Email Address */}
                 <div className="space-y-3">
                   <label className="text-[11px] font-black text-slate-400 ml-1 uppercase tracking-widest">Email Address</label>
                   <div className="relative">
@@ -173,12 +164,11 @@ export default function SettingsPage() {
                 </div>
               </div>
 
-              {/* Action Button */}
               <div className="mt-12">
                 <button 
                   onClick={handleUpdate}
                   disabled={isSaving}
-                  className="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white px-12 py-5 rounded-[1.5rem] font-black text-xs uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 shadow-xl shadow-blue-100 active:scale-95 disabled:bg-slate-300"
+                  className="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white px-12 py-5 rounded-[1.5rem] font-black text-xs uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 shadow-xl active:scale-95 disabled:bg-slate-300"
                 >
                   {isSaving ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
                   Save Profile Changes
