@@ -84,11 +84,11 @@ export default function AdminDashboard() {
 
     const unsubActivity = onSnapshot(qStatus, (statusSnap) => {
       onSnapshot(qAttend, (attendSnap) => {
-        const statuses = statusSnap.docs.map(d => ({ uid: d.id, ...d.data() }));
+        const statuses = statusSnap.docs.map(d => ({ uid: d.id, ...d.data() as any}));
         
         // VERCEL FIX: Explicitly typing the data
         const attendances = attendSnap.docs.map(d => {
-            const data = (d.data() as any) as { 
+            const data = d.data() as { 
                 checkIn?: any; 
                 checkOut?: any; 
                 userId?: string; 
@@ -100,7 +100,7 @@ export default function AdminDashboard() {
         });
         
         const activeUsers = attendances
-          .filter(a => a.checkIn && !a.checkOut && a.userId !== authUser.uid)
+          .filter((a: any) => a.checkIn && !a.checkOut && a.userId !== authUser.uid)
           .map(a => {
             const presence = statuses.find(s => (s as any).uid === a.userId);
             return {
