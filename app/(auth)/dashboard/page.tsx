@@ -89,7 +89,7 @@ export default function MainDashboard() {
               if (attendance) {
                 activeList.push({
                   ...u,
-                  presenceState: presence?.state || 'offline',
+                  presenceState: (presence as any)?.state || 'offline',
                   onBreak: !!((attendance as any).breakStart && !(attendance as any).breakEnd)
                 });
               } else {

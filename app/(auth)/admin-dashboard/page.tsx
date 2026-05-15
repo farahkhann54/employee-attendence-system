@@ -88,7 +88,7 @@ export default function AdminDashboard() {
         
         // VERCEL FIX: Explicitly typing the data
         const attendances = attendSnap.docs.map(d => {
-            const data = d.data() as { 
+            const data = (d.data() as any) as { 
                 checkIn?: any; 
                 checkOut?: any; 
                 userId?: string; 
