@@ -74,7 +74,7 @@ export default function MainDashboard() {
         // Now listen to Statuses and Attendance simultaneously
         return onSnapshot(qStatus, (statusSnap) => {
           onSnapshot(qAttend, (attendSnap) => {
-            const statuses = statusSnap.docs.map(d => ({ uid: d.id, ...d.data() }));
+            const statuses = statusSnap.docs.map(d => ({ uid: d.id, state: (d.data() as any).state, ...d.data() }));
             const attendances = attendSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
             const activeList: any[] = [];
@@ -90,7 +90,7 @@ export default function MainDashboard() {
                 activeList.push({
                   ...u,
                   presenceState: presence?.state || 'offline',
-                  onBreak: !!(attendance.breakStart && !attendance.breakEnd)
+                  onBreak: !!((attendance as any).breakStart && !(attendance as any).breakEnd)
                 });
               } else {
                 offlineList.push(u);

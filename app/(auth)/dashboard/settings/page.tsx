@@ -91,7 +91,7 @@ export default function SettingsPage() {
             <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm text-center">
               <div className="relative inline-block group mb-6">
                 <div className="ring-4 ring-slate-50 rounded-full p-1">
-                  <UserAvatar name={formData.name || "User"} size="xl" />
+                  <UserAvatar name={formData.name || "User"} size="lg" />
                 </div>
                 <button className="absolute bottom-1 right-1 bg-blue-600 text-white p-2.5 rounded-xl shadow-lg hover:scale-110 transition-transform">
                   <Camera size={18} />
