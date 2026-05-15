@@ -2,11 +2,14 @@
 import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
-  const session = request.cookies.get('firebase-token'); // Agar aap cookies use kar rahe hain
+  const token = request.cookies.get('firebase-token')?.value;
   const { pathname } = request.nextUrl;
 
-  // Authentication logic yahan handle ho sakti hai server-side par
-  // Filhal hum isay empty chor rahe hain kyunki client-side guard zyada fast response dega Next.js App Router mein
+  // Simple Redirect logic agar zaroorat ho (Optional)
+  // if (!token && pathname.startsWith('/admin-dashboard')) {
+  //   return NextResponse.redirect(new URL('/login', request.url));
+  // }
+
   return NextResponse.next();
 }
 
