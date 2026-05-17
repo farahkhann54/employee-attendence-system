@@ -6,7 +6,7 @@ import { useAppSelector } from '@/app/store/hooks';
 import { db } from '@/services/firebase';
 import { collection, query, where, onSnapshot, doc, getDocs } from 'firebase/firestore';
 import { motion, AnimatePresence } from 'framer-motion';
-import { usePresence } from '../../hooks/usePresence'; 
+import { usePresence } from '../hooks/usePresence'; 
 import { 
   Zap, Clock, Coffee, Users, Radio, 
   ChevronRight, Moon, ShieldCheck, Activity, Monitor
