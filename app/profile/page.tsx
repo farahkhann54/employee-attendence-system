@@ -3,12 +3,15 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { auth, db } from '../../services/firebase';
-import { signOut, updateProfile as firebaseUpdateProfile } from 'firebase/auth'; // Import this
+import { signOut, updateProfile as firebaseUpdateProfile } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { logout, updateProfile } from '../store/(auth)/authSlice';
-import { Loader2, User, CreditCard, Calendar, Briefcase, LogOut } from 'lucide-react';
+import { Loader2, User, CreditCard, Calendar, Briefcase, LogOut, Sparkles, ShieldCheck } from 'lucide-react';
 import UserAvatar from '@/components/ui/UserAvatar';
+import { motion } from 'framer-motion';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -85,7 +88,7 @@ export default function ProfilePage() {
       router.replace(route);
     } catch (err) {
       console.error("Save error:", err);
-      alert("Profile save karne mein masla aya.");
+      alert("Profile save failed.");
     } finally {
       setIsSaving(false);
     }
@@ -104,109 +107,83 @@ export default function ProfilePage() {
   );
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center p-4">
-      <div className="w-full max-w-2xl bg-white rounded-[2.5rem] shadow-2xl shadow-slate-200/50 border border-slate-100 p-8 md:p-12">
-        
-        {/* Header Section */}
-        <div className="text-center mb-10">
-          <div className="relative inline-block mb-6">
-            <div className="scale-125 border-4 border-white shadow-xl rounded-full">
-               <UserAvatar name={formData.name || "User"} size="lg" />
-            </div>
-            <div className="absolute -bottom-2 -right-2 bg-blue-600 text-white p-2 rounded-lg shadow-lg">
-               <User size={16} />
-            </div>
-          </div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Complete Your Profile</h1>
-          <p className="text-slate-400 font-medium mt-2">Personalize your dashboard experience</p>
-        </div>
-
-        {/* Form Inputs with Icons */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-2">
-            <label className="text-[10px] font-black text-slate-400 ml-2 uppercase tracking-widest">Full Name</label>
-            <div className="relative">
-              <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-              <input
-                className="w-full border-2 border-slate-50 rounded-2xl pl-12 pr-5 py-4 bg-slate-50 focus:bg-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-bold text-slate-700"
-                placeholder="John Doe"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              />
+    <div className="min-h-screen px-4 py-10 flex items-center justify-center bg-[radial-gradient(circle_at_top,rgba(16,185,129,0.12),transparent_35%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_100%)]">
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="w-full max-w-6xl overflow-hidden rounded-[2.5rem] border border-white/70 bg-white/85 shadow-[0_30px_80px_rgba(15,23,42,0.12)] backdrop-blur-xl">
+        <div className="grid lg:grid-cols-[360px_1fr]">
+          <div className="p-8 lg:p-10 bg-slate-950 text-white relative overflow-hidden">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(16,185,129,0.18),transparent_30%),radial-gradient(circle_at_bottom_left,rgba(59,130,246,0.14),transparent_28%)]" />
+            <div className="relative space-y-8">
+              <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-[10px] font-black uppercase tracking-[0.35em] text-white/70">
+                <Sparkles className="h-4 w-4" /> Profile Setup
+              </div>
+              <div className="text-center lg:text-left space-y-5">
+                <div className="inline-flex rounded-full border border-white/10 p-1 bg-white/5">
+                  <UserAvatar name={formData.name || 'User'} size="lg" />
+                </div>
+                <div>
+                  <h1 className="text-3xl font-black tracking-tight">Complete your profile</h1>
+                  <p className="mt-2 text-sm leading-6 text-white/70">Add the details your team needs to keep records clean and professional.</p>
+                </div>
+              </div>
+              <div className="rounded-3xl border border-white/10 bg-white/5 p-4 text-sm text-white/70">
+                <div className="flex items-center gap-2 font-semibold text-white">
+                  <ShieldCheck className="h-4 w-4" /> Secure account setup
+                </div>
+                <p className="mt-2 text-sm leading-6">Profile information is stored in Firestore and used across the dashboard.</p>
+              </div>
             </div>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-[10px] font-black text-slate-400 ml-2 uppercase tracking-widest">Father Name</label>
-            <div className="relative">
-              <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-              <input
-                className="w-full border-2 border-slate-50 rounded-2xl pl-12 pr-5 py-4 bg-slate-50 focus:bg-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-bold text-slate-700"
-                placeholder="Father's Full Name"
-                value={formData.fatherName}
-                onChange={(e) => setFormData({ ...formData, fatherName: e.target.value })}
-              />
+          <div className="p-8 sm:p-10 lg:p-12">
+            <div className="mb-8 flex items-end justify-between gap-4 border-b border-slate-100 pb-6">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.35em] text-slate-400">Account details</p>
+                <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-950">Personal information</h2>
+              </div>
             </div>
-          </div>
 
-          <div className="space-y-2">
-            <label className="text-[10px] font-black text-slate-400 ml-2 uppercase tracking-widest">CNIC Number</label>
-            <div className="relative">
-              <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-              <input
-                className="w-full border-2 border-slate-50 rounded-2xl pl-12 pr-5 py-4 bg-slate-50 focus:bg-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-bold text-slate-700"
-                placeholder="42101-XXXXXXX-X"
-                value={formData.cnic}
-                onChange={(e) => setFormData({ ...formData, cnic: e.target.value })}
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <Field label="Full Name" icon={<User size={18} />}>
+                <Input value={formData.name} placeholder="John Doe" onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
+              </Field>
+              <Field label="Father Name" icon={<User size={18} />}>
+                <Input value={formData.fatherName} placeholder="Father's Full Name" onChange={(e) => setFormData({ ...formData, fatherName: e.target.value })} />
+              </Field>
+              <Field label="CNIC Number" icon={<CreditCard size={18} />}>
+                <Input value={formData.cnic} placeholder="42101-XXXXXXX-X" onChange={(e) => setFormData({ ...formData, cnic: e.target.value })} />
+              </Field>
+              <Field label="Date of Birth" icon={<Calendar size={18} />}>
+                <Input type="date" value={formData.dob} onChange={(e) => setFormData({ ...formData, dob: e.target.value })} />
+              </Field>
+              <div className="md:col-span-2">
+                <Field label="Job Field / Department" icon={<Briefcase size={18} />}>
+                  <Input value={formData.jobField} placeholder="e.g. Software Engineering" onChange={(e) => setFormData({ ...formData, jobField: e.target.value })} />
+                </Field>
+              </div>
             </div>
-          </div>
 
-          <div className="space-y-2">
-            <label className="text-[10px] font-black text-slate-400 ml-2 uppercase tracking-widest">Date of Birth</label>
-            <div className="relative">
-              <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-              <input
-                type="date"
-                className="w-full border-2 border-slate-50 rounded-2xl pl-12 pr-5 py-4 bg-slate-50 focus:bg-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-bold text-slate-700"
-                value={formData.dob}
-                onChange={(e) => setFormData({ ...formData, dob: e.target.value })}
-              />
-            </div>
-          </div>
-
-          <div className="md:col-span-2 space-y-2">
-            <label className="text-[10px] font-black text-slate-400 ml-2 uppercase tracking-widest">Job Field / Department</label>
-            <div className="relative">
-              <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-              <input
-                className="w-full border-2 border-slate-50 rounded-2xl pl-12 pr-5 py-4 bg-slate-50 focus:bg-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-bold text-slate-700"
-                placeholder="e.g. Software Engineering"
-                value={formData.jobField}
-                onChange={(e) => setFormData({ ...formData, jobField: e.target.value })}
-              />
+            <div className="mt-10 flex flex-col sm:flex-row gap-3">
+              <Button onClick={handleSaveProfile} disabled={isSaving} className="w-full sm:w-auto px-8 rounded-2xl h-12">
+                {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Finalize Profile'}
+              </Button>
+              <Button variant="outline" onClick={handleLogout} className="w-full sm:w-auto px-8 rounded-2xl h-12 text-rose-600 border-rose-200 hover:bg-rose-50">
+                <LogOut size={16} /> Skip for now & Logout
+              </Button>
             </div>
           </div>
         </div>
+      </motion.div>
+    </div>
+  );
+}
 
-        {/* Action Buttons */}
-        <div className="mt-12 space-y-4">
-          <button
-            onClick={handleSaveProfile}
-            disabled={isSaving}
-            className="w-full bg-slate-900 hover:bg-black text-white py-5 rounded-3xl font-black shadow-xl shadow-slate-200 transition-all active:scale-[0.98] disabled:bg-slate-400 flex items-center justify-center gap-3 uppercase tracking-widest text-xs"
-          >
-            {isSaving ? <Loader2 className="animate-spin" size={20} /> : "Finalize Profile"}
-          </button>
-
-          <button 
-            onClick={handleLogout} 
-            className="w-full flex items-center justify-center gap-2 text-slate-400 hover:text-red-500 text-[10px] font-black uppercase tracking-[0.2em] transition-all"
-          >
-            <LogOut size={14} /> Skip for now & Logout
-          </button>
-        </div>
-      </div>
+function Field({ label, icon, children }: { label: string; icon: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <div className="space-y-2">
+      <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">
+        {icon} {label}
+      </label>
+      {children}
     </div>
   );
 }

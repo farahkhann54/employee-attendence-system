@@ -13,26 +13,21 @@ export default function AuthInit({ children }: { children: React.ReactNode }) {
   usePresence();
 
   useEffect(() => {
-    // onAuthStateChanged listener start ho raha hai
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       dispatch(setLoading(true));
 
       if (firebaseUser) {
         try {
-          // 1. Pehle Firestore se user ka pura data (role, status) uthao
           const snap = await getDoc(doc(db, "users", firebaseUser.uid));
           
           if (snap.exists()) {
             const userData = snap.data() as UserProfile;
-            // 2. Redux mein pura profile set karo
             dispatch(setUser({
               ...userData,
               uid: firebaseUser.uid,
               email: firebaseUser.email || "",
-              
             }));
           } else {
-            // Agar Firestore mein data nahi hai (sirf auth hai)
             dispatch(setUser({
                 uid: firebaseUser.uid,
                 email: firebaseUser.email || "",
@@ -45,7 +40,6 @@ export default function AuthInit({ children }: { children: React.ReactNode }) {
           dispatch(setUser(null));
         }
       } else {
-        // User logged out hai
         dispatch(setUser(null));
       }
       

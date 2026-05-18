@@ -75,11 +75,9 @@ export default function LeavesPage() {
 
   return (
     <DashboardLayout activeTab="leaves">
-      <div className="space-y-10">
-        
-        {/* TOP SECTION: Application Form */}
+      <div className="space-y-10 max-w-6xl mx-auto">
         <div className="max-w-4xl mx-auto">
-          <div className="bg-white p-8 md:p-10 rounded-[2.5rem] border border-slate-100 shadow-sm">
+          <div className="bg-white/85 p-8 md:p-10 rounded-[2.5rem] border border-white/70 shadow-sm backdrop-blur-xl">
             <div className="mb-8">
               <h1 className="text-3xl font-black text-slate-900 tracking-tight">Apply for Leave</h1>
               <p className="text-slate-500 font-medium mt-1">Submit your request and track its status below.</p>
@@ -125,7 +123,6 @@ export default function LeavesPage() {
           </div>
         </div>
 
-        {/* BOTTOM SECTION: The List (Your History) */}
         <div className="max-w-5xl mx-auto">
           <div className="flex items-center justify-between mb-6 px-4">
             <h2 className="text-2xl font-black text-slate-900 tracking-tight">Recent Applications</h2>

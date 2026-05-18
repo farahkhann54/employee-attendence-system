@@ -28,7 +28,7 @@ export default function ManageUsers() {
 
   return (
     <DashboardLayout activeTab="manage-users">
-      <div className="flex justify-between items-center mb-10">
+      <div className="flex justify-between items-center mb-10 max-w-6xl mx-auto">
         <div>
           <h1 className="text-4xl font-black text-slate-900 tracking-tight">
             Personnel Directory
@@ -52,7 +52,7 @@ export default function ManageUsers() {
         </div>
       </div>
 
-      <div className="bg-white rounded-[2.5rem] border border-slate-100 overflow-hidden shadow-sm">
+      <div className="bg-white/85 rounded-[2.5rem] border border-white/70 overflow-hidden shadow-sm backdrop-blur-xl max-w-6xl mx-auto">
         <table className="w-full text-left">
           <thead className="bg-slate-50/50 border-b border-slate-100">
             <tr>

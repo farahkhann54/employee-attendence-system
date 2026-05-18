@@ -161,7 +161,7 @@ export default function AdminDashboard() {
           { label: "Leaves", value: stats.pendingLeaves, icon: Clock, color: "text-orange-600 bg-orange-50" },
           { label: "Rate", value: stats.attendanceRate, icon: BarChart3, color: "text-purple-600 bg-purple-50" },
         ].map((s, i) => (
-          <Card key={i} className="border-none shadow-sm hover:shadow-md transition-all rounded-[2rem]">
+          <Card key={i} className="border-none shadow-sm hover:shadow-md transition-all rounded-4xl">
             <CardContent className="p-6 flex items-center gap-5">
               <div className={`p-4 rounded-2xl ${s.color}`}><s.icon size={24} /></div>
               <div>
@@ -180,7 +180,7 @@ export default function AdminDashboard() {
             <CardTitle>Attendance Insights</CardTitle>
             <TrendingUp className="text-emerald-500" />
           </CardHeader>
-          <CardContent className="h-[350px] p-4">
+          <CardContent className="h-87.5 p-4">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartData}>
                 <defs>

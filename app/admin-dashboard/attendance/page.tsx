@@ -31,7 +31,7 @@ export default function AdminAttendance() {
 
   return (
     <DashboardLayout activeTab="manage-attendance">
-      <div className="mb-10 flex justify-between items-end">
+      <div className="mb-10 flex justify-between items-end max-w-6xl mx-auto">
         <div>
           <h1 className="text-4xl font-black text-slate-900 tracking-tight">Staff Attendance</h1>
           <p className="text-slate-500 font-medium mt-1">Detailed logs of all personnel check-ins and check-outs.</p>
@@ -42,7 +42,7 @@ export default function AdminAttendance() {
         </div>
       </div>
 
-      <div className="bg-white rounded-[2.5rem] border border-slate-100 overflow-hidden shadow-sm">
+      <div className="bg-white/85 rounded-[2.5rem] border border-white/70 overflow-hidden shadow-sm backdrop-blur-xl max-w-6xl mx-auto">
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-slate-50/50 border-b border-slate-100">

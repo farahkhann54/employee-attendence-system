@@ -1,12 +1,12 @@
 ﻿'use client';
 
 import { motion } from 'framer-motion';
-import { Loader2, ShieldCheck } from 'lucide-react';
+import { Loader2, ShieldCheck, Sparkles } from 'lucide-react';
 
 export default function SplashScreen() {
   return (
-    <div className="min-h-screen flex items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.16),_transparent_42%),linear-gradient(180deg,_#f8fbff_0%,_#eef4ff_100%)] px-6">
-      <div className="relative w-full max-w-md rounded-[2rem] border border-white/70 bg-white/80 p-8 text-center shadow-2xl shadow-slate-200/60 backdrop-blur-xl">
+    <div className="min-h-screen flex items-center justify-center overflow-hidden px-6 bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.18),_transparent_42%),linear-gradient(180deg,_#f8fafc_0%,_#eef2ff_100%)]">
+      <div className="relative w-full max-w-md rounded-[2.25rem] border border-white/80 bg-white/80 p-8 text-center shadow-[0_30px_80px_rgba(15,23,42,0.12)] backdrop-blur-xl">
         <motion.div
           initial={{ opacity: 0, scale: 0.85 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -22,7 +22,8 @@ export default function SplashScreen() {
           transition={{ delay: 0.15, duration: 0.45 }}
           className="mt-6 space-y-3"
         >
-          <p className="text-[10px] font-black uppercase tracking-[0.35em] text-slate-400">
+          <p className="text-[10px] font-black uppercase tracking-[0.35em] text-slate-400 flex items-center justify-center gap-2">
+            <Sparkles className="h-3 w-3" />
             Employee Management System
           </p>
           <h1 className="text-3xl font-black tracking-tight text-slate-900">

@@ -13,26 +13,24 @@ export default function AdminLeaves() {
   const [view, setView] = useState<'pending' | 'history'>('pending');
 
   useEffect(() => {
-    // 🔥 Core Logic: Query badalte hi data filter ho jayega
     const leavesRef = collection(db, "leaves");
     
     const q = view === 'pending' 
       ? query(
           leavesRef, 
-          where("status", "==", "pending"), // Sirf pending dikhao
-          orderBy("createdAt", "desc")      // Latest requests upar
+          where("status", "==", "pending"),
+          orderBy("createdAt", "desc")
         )
       : query(
           leavesRef, 
-          where("status", "in", ["approved", "rejected"]), // Rejected/Approved history mein
-          orderBy("actionedAt", "desc")                    // Faisle ki date ke hisab se sort
+          where("status", "in", ["approved", "rejected"]),
+          orderBy("actionedAt", "desc")
         );
 
     const unsub = onSnapshot(q, (snap) => {
       setLeaves(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     }, (error) => {
       console.error("Firestore Query Error:", error);
-      // Agar console mein index ka link aaye toh usay click karke index bana lein
     });
 
     return () => unsub();
@@ -42,11 +40,10 @@ export default function AdminLeaves() {
     try {
       const leaveRef = doc(db, "leaves", id);
       
-      // 🔥 Update Firestore: Status badalte hi onSnapshot ise 'pending' list se nikaal dega
       await updateDoc(leaveRef, { 
         status: newStatus,
-        actionedAt: new Date(), // History mein sorting ke liye
-        isPending: false        // Extra check
+        actionedAt: new Date(),
+        isPending: false
       });
 
       toast.success(`Request ${newStatus} ho gayi!`);
@@ -67,7 +64,7 @@ export default function AdminLeaves() {
           </p>
         </div>
 
-        <div className="bg-slate-100 p-1.5 rounded-[1.5rem] flex items-center shadow-inner">
+        <div className="bg-slate-100 p-1.5 rounded-3xl flex items-center shadow-inner">
           <button 
             onClick={() => setView('pending')}
             className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${view === 'pending' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
@@ -96,7 +93,7 @@ export default function AdminLeaves() {
                 className="bg-white p-8 rounded-[2.5rem] border border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-sm hover:shadow-md transition-all group"
               >
                 <div className="flex items-center gap-6">
-                  <div className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center shadow-inner ${
+                  <div className={`w-16 h-16 rounded-3xl flex items-center justify-center shadow-inner ${
                     leave.status === 'approved' ? 'bg-emerald-50 text-emerald-600' : 
                     leave.status === 'rejected' ? 'bg-rose-50 text-rose-600' : 'bg-amber-50 text-amber-600'
                   }`}>

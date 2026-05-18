@@ -18,7 +18,6 @@ import {
 } from 'lucide-react';
 import UserAvatar from '@/components/ui/UserAvatar';
 
-// 1. FIX: TypeScript Interface add kiya taake errors na ayen
 interface UserProfile {
   name: string;
   jobField: string;
@@ -33,7 +32,6 @@ export default function SettingsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
 
-  // 2. FIX: Type casting 'as any' use ki hai initial state ke liye
   const [formData, setFormData] = useState<UserProfile>({
     name: user?.name || "",
     jobField: (user as any)?.jobField || "",
@@ -60,7 +58,7 @@ export default function SettingsPage() {
       setTimeout(() => setShowSuccess(false), 3000);
     } catch (err) {
       console.error(err);
-      alert("Settings save karne mein masla aya.");
+      alert("Settings save failed.");
     } finally {
       setIsSaving(false);
     }
@@ -70,7 +68,7 @@ export default function SettingsPage() {
 
   return (
     <DashboardLayout activeTab="settings">
-      <div className="max-w-5xl mx-auto space-y-10 pb-20">
+      <div className="max-w-6xl mx-auto space-y-10 pb-20">
         
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-8">
           <div>
@@ -88,7 +86,7 @@ export default function SettingsPage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
           
           <div className="lg:col-span-4 space-y-6">
-            <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm text-center">
+            <div className="bg-white/85 p-8 rounded-[2.5rem] border border-white/70 shadow-sm text-center backdrop-blur-xl">
               <div className="relative inline-block group mb-6">
                 <div className="ring-4 ring-slate-50 rounded-full p-1">
                   <UserAvatar name={formData.name || "User"} size="lg" />
@@ -103,13 +101,12 @@ export default function SettingsPage() {
           </div>
 
           <div className="lg:col-span-8 space-y-6">
-            <div className="bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-sm">
+            <div className="bg-white/85 p-10 rounded-[2.5rem] border border-white/70 shadow-sm backdrop-blur-xl">
               <h3 className="text-lg font-black text-slate-800 mb-8 flex items-center gap-2">
                 <User className="text-blue-600" size={20} /> Personal Information
               </h3>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {/* Full Name */}
                 <div className="space-y-3">
                   <label className="text-[11px] font-black text-slate-400 ml-1 uppercase tracking-widest">Full Name</label>
                   <div className="relative group">
@@ -123,7 +120,6 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
-                {/* Email Address */}
                 <div className="space-y-3">
                   <label className="text-[11px] font-black text-slate-400 ml-1 uppercase tracking-widest">Email Address</label>
                   <div className="relative">
@@ -136,7 +132,6 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
-                {/* Phone */}
                 <div className="space-y-3">
                   <label className="text-[11px] font-black text-slate-400 ml-1 uppercase tracking-widest">Phone Number</label>
                   <div className="relative group">
@@ -150,7 +145,6 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
-                {/* Location */}
                 <div className="space-y-3">
                   <label className="text-[11px] font-black text-slate-400 ml-1 uppercase tracking-widest">Location</label>
                   <div className="relative group">

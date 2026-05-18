@@ -128,10 +128,8 @@ export default function MainDashboard() {
 
   return (
     <DashboardLayout activeTab="dashboard">
-      <div className="max-w-[1600px] mx-auto space-y-10 pb-20 px-4">
-        
-        {/* HEADER */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-slate-100 pb-8">
+      <div className="max-w-7xl mx-auto space-y-10 pb-20 px-1 md:px-2">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 rounded-[2.5rem] border border-white/70 bg-white/70 p-6 md:p-8 shadow-sm backdrop-blur-xl">
           <div>
             <div className="flex items-center gap-2 mb-2">
               <span className="px-3 py-1 bg-emerald-50 text-emerald-600 text-[10px] font-black uppercase tracking-widest rounded-full">System Live</span>
@@ -158,9 +156,7 @@ export default function MainDashboard() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-          
           <div className="lg:col-span-8 space-y-10">
-            {/* Statistics */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {[
                 { label: 'Attendance', val: presentDays, unit: 'Days', icon: <Activity size={16}/>, color: 'text-indigo-600', bg: 'bg-indigo-50' },
@@ -176,8 +172,7 @@ export default function MainDashboard() {
               ))}
             </div>
 
-            {/* LIVE PERSONNEL LIST */}
-            <section className="bg-white rounded-[3.5rem] border border-slate-100 p-10 shadow-sm relative overflow-hidden">
+            <section className="bg-white/85 rounded-[3rem] border border-white/70 p-8 md:p-10 shadow-sm relative overflow-hidden backdrop-blur-xl">
               <div className="flex items-center justify-between mb-12">
                 <div>
                   <h3 className="text-2xl font-black text-slate-900 tracking-tight">Personnel Live</h3>
@@ -207,7 +202,6 @@ export default function MainDashboard() {
                             {member.name?.substring(0, 2).toUpperCase()}
                           </div>
                           
-                          {/* Online/Away Indicator */}
                           <div className={`absolute -top-1 -right-1 w-4 h-4 border-4 ${member.uid === user?.uid ? 'border-slate-900' : 'border-white'} rounded-full ${
                               member.presenceState === 'online' ? 'bg-emerald-400 animate-pulse' : 'bg-slate-400'
                           }`} />
@@ -240,8 +234,7 @@ export default function MainDashboard() {
               </div>
             </section>
 
-            {/* OFFLINE LIST */}
-            <section className="bg-slate-50/30 rounded-[3rem] border border-dashed border-slate-200 p-10">
+            <section className="bg-white/60 rounded-[3rem] border border-dashed border-slate-200 p-10 backdrop-blur-sm">
                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-10 text-center opacity-60">Currently Offline</h3>
                <div className="flex flex-wrap justify-center gap-8 opacity-40">
                   {offlineStaff.map((m) => (
@@ -256,7 +249,6 @@ export default function MainDashboard() {
             </section>
           </div>
 
-          {/* SIDEBAR: ACTIONS */}
           <div className="lg:col-span-4 space-y-8">
              <div className="bg-slate-900 rounded-[3rem] p-10 text-white relative overflow-hidden shadow-2xl">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-600/30 blur-[60px] rounded-full -mr-10 -mt-10" />

@@ -14,18 +14,13 @@ const AuthSlice = createSlice({
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.loading = action.payload;
     },
-    // 🔥 Login ke waqt pura user set karne ke liye
-    // authSlice.ts mein
     setUser: (state, action: PayloadAction<UserProfile | null>) => {
-      // Yahan '| null' add karein
       state.user = action.payload;
       state.loading = false;
       state.error = null;
     },
-    // 🔥 Profile Completion ya Settings update ke liye
     updateProfile: (state, action: PayloadAction<Partial<UserProfile>>) => {
       if (state.user) {
-        // ...state.user (purana data) + action.payload (naya data)
         state.user = { ...state.user, ...action.payload };
       }
     },

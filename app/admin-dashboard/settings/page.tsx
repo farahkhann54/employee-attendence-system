@@ -11,8 +11,8 @@ export default function AdminSettings() {
   return (
     <DashboardLayout activeTab="settings">
       <div className="mb-10">
-        <h1 className="text-4xl font-black text-slate-900 tracking-tight">System Settings</h1>
-        <p className="text-slate-500 font-medium mt-1">Manage your administrative preferences and security.</p>
+          <h1 className="text-4xl font-black text-slate-900 tracking-tight">System Settings</h1>
+          <p className="text-slate-500 font-medium mt-1">Manage your administrative preferences and security.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">

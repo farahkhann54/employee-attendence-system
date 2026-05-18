@@ -111,7 +111,7 @@ export default function AttendancePage() {
 
   return (
     <DashboardLayout activeTab="attendance">
-      <div className="space-y-8">
+      <div className="space-y-8 max-w-6xl mx-auto">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
             <h1 className="text-3xl font-black text-slate-900 tracking-tight">Daily Attendance</h1>
@@ -156,9 +156,8 @@ export default function AttendancePage() {
           </div>
         </div>
 
-        {/* --- DYNAMIC STATUS SECTION --- */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-white p-8 rounded-[2.5rem] border-2 border-slate-50 shadow-sm">
+          <div className="bg-white/85 p-8 rounded-[2.5rem] border border-white/70 shadow-sm backdrop-blur-xl">
              <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-4"><Clock size={24} /></div>
              <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">Attendance Status</p>
              <h3 className={`text-2xl font-black mt-1 ${status === 'checked-in' ? 'text-emerald-600' : 'text-slate-900'}`}>

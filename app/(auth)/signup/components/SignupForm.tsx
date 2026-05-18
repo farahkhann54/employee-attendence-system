@@ -1,4 +1,6 @@
 import React from 'react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 
 interface SignupFormProps {
   setEmail: (val: string) => void;
@@ -9,34 +11,19 @@ interface SignupFormProps {
 export function SignupForm({ setEmail, setPassword, onSubmit }: SignupFormProps) {
   return (
     <form onSubmit={onSubmit} className="space-y-5">
-      <div className="space-y-1">
-        <label className="text-xs font-bold text-gray-500 ml-1 uppercase">Work Email</label>
-        <input 
-          type="email" 
-          placeholder="name@company.com" 
-          className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none transition"
-          onChange={(e) => setEmail(e.target.value)} 
-          required 
-        />
+      <div className="space-y-2">
+        <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Work Email</label>
+        <Input type="email" placeholder="name@company.com" onChange={(e) => setEmail(e.target.value)} required />
       </div>
 
-      <div className="space-y-1">
-        <label className="text-xs font-bold text-gray-500 ml-1 uppercase">Password</label>
-        <input 
-          type="password" 
-          placeholder="••••••••" 
-          className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none transition"
-          onChange={(e) => setPassword(e.target.value)} 
-          required 
-        />
+      <div className="space-y-2">
+        <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Password</label>
+        <Input type="password" placeholder="••••••••" onChange={(e) => setPassword(e.target.value)} required />
       </div>
 
-      <button 
-        type="submit"
-        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-2xl shadow-lg shadow-emerald-100 transition active:scale-95 flex items-center justify-center gap-2"
-      >
+      <Button type="submit" className="w-full rounded-2xl h-12 bg-emerald-600 text-white hover:bg-emerald-700">
         Create Account
-      </button>
+      </Button>
     </form>
   );
 }

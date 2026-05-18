@@ -1,5 +1,7 @@
 import React from 'react';
-import { Mail, Lock, LogIn } from 'lucide-react';
+import { Mail, Lock } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 
 interface LoginFormProps {
   setEmail: (val: string) => void;
@@ -10,25 +12,23 @@ interface LoginFormProps {
 export function LoginForm({ setEmail, setPassword, onSubmit }: LoginFormProps) {
   return (
     <form onSubmit={onSubmit} className="space-y-5">
-      <div className="relative">
-        <Mail className="absolute left-4 top-4 text-gray-400 w-5 h-5" />
-        <input 
-          type="email" placeholder="Email Address" 
-          className="w-full pl-12 pr-4 py-4 bg-gray-50 border rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none"
-          onChange={(e) => setEmail(e.target.value)} required
-        />
+      <div className="space-y-2">
+        <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Email</label>
+        <div className="relative">
+          <Mail className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Input className="pl-11" type="email" placeholder="Email Address" onChange={(e) => setEmail(e.target.value)} required />
+        </div>
       </div>
-      <div className="relative">
-        <Lock className="absolute left-4 top-4 text-gray-400 w-5 h-5" />
-        <input 
-          type="password" placeholder="Password" 
-          className="w-full pl-12 pr-4 py-4 bg-gray-50 border rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none"
-          onChange={(e) => setPassword(e.target.value)} required
-        />
+      <div className="space-y-2">
+        <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Password</label>
+        <div className="relative">
+          <Lock className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Input className="pl-11" type="password" placeholder="Password" onChange={(e) => setPassword(e.target.value)} required />
+        </div>
       </div>
-      <button className="w-full bg-blue-600 text-white font-bold py-4 rounded-2xl shadow-lg hover:bg-blue-700 transition flex items-center justify-center gap-2">
-        <LogIn size={20} /> Login
-      </button>
+      <Button className="w-full rounded-2xl h-12 font-semibold" type="submit">
+        Login
+      </Button>
     </form>
   );
 }
