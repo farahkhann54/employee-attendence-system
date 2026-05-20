@@ -1,67 +1,98 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useAppSelector } from '@/app/store/hooks';
-import { Settings, Shield, Bell, User, Lock, Save } from 'lucide-react';
+import { Save, Loader2, User, CreditCard, Phone, MapPin, CheckCircle2, Mail } from 'lucide-react';
+import { db } from '@/services/firebase';
+import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function AdminSettings() {
   const { user } = useAppSelector((state) => state.auth);
+  const [loading, setLoading] = useState(true);
+  const [showPopup, setShowPopup] = useState(false);
+  const [formData, setFormData] = useState<any>({});
+
+  useEffect(() => {
+    if (!user?.uid) return;
+    const unsub = onSnapshot(doc(db, "users", user.uid), (doc) => {
+      if (doc.exists()) setFormData(doc.data());
+      setLoading(false);
+    });
+    return () => unsub();
+  }, [user?.uid]);
+
+  const handleUpdate = async () => {
+    if (!user?.uid) return;
+    try {
+      await updateDoc(doc(db, "users", user.uid), formData);
+      setShowPopup(true);
+      setTimeout(() => setShowPopup(false), 3000);
+    } catch (error) { console.error(error); }
+  };
+
+  if (loading) return <DashboardLayout activeTab="settings"><div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin text-indigo-600" /></div></DashboardLayout>;
+
+  const fields = [
+    { key: 'name', label: 'Full Name', icon: User },
+    { key: 'cnic', label: 'CNIC Number', icon: CreditCard },
+    { key: 'phone', label: 'Phone Number', icon: Phone },
+    { key: 'city', label: 'City', icon: MapPin },
+    { key: 'email', label: 'Email Address', icon: Mail },
+  ];
 
   return (
     <DashboardLayout activeTab="settings">
-      <div className="mb-10">
-          <h1 className="text-4xl font-black text-slate-900 tracking-tight">System Settings</h1>
-          <p className="text-slate-500 font-medium mt-1">Manage your administrative preferences and security.</p>
-      </div>
+      <AnimatePresence>
+        {showPopup && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} 
+            className="fixed top-32 right-10 bg-white p-6 rounded-3xl shadow-2xl border border-emerald-100 flex items-center gap-4 z-50">
+            <CheckCircle2 className="text-emerald-500" size={30} />
+            <div>
+              <h4 className="font-black text-slate-900">Success!</h4>
+              <p className="text-xs font-bold text-emerald-600">Profile Updated Successfully</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-        {/* Left: Navigation Menu */}
-        <div className="lg:col-span-4 space-y-4">
-           {[
-             { label: 'General Profile', icon: <User size={18}/>, active: true },
-             { label: 'Security & Access', icon: <Lock size={18}/>, active: false },
-             { label: 'Notifications', icon: <Bell size={18}/>, active: false },
-             { label: 'Admin Permissions', icon: <Shield size={18}/>, active: false },
-           ].map((item, i) => (
-             <button key={i} className={`w-full flex items-center gap-4 px-6 py-5 rounded-3xl font-black text-xs uppercase tracking-widest transition-all ${item.active ? 'bg-slate-900 text-white shadow-xl' : 'bg-white text-slate-400 hover:bg-slate-50'}`}>
-                {item.icon} {item.label}
-             </button>
-           ))}
-        </div>
+      <div className="max-w-4xl mx-auto space-y-8">
+         <div className="flex items-center gap-6 bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm">
+            {/* Gol Avatar */}
+            <div className="h-24 w-24 rounded-full bg-slate-900 flex items-center justify-center text-white text-3xl font-black shadow-xl">
+               {formData.name?.charAt(0).toUpperCase()}
+            </div>
+            <div>
+               <h1 className="text-3xl font-black text-slate-900 tracking-tighter">{formData.name || 'User'}</h1>
+               <p className="text-slate-400 font-bold text-xs uppercase tracking-widest mt-1">Personal Profile Settings</p>
+            </div>
+         </div>
 
-        {/* Right: Form Area */}
-        <div className="lg:col-span-8 bg-white rounded-[3rem] border border-slate-100 p-10 shadow-sm">
-           <div className="space-y-8">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="space-y-3">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-2">Full Name</label>
-                  <input type="text" defaultValue={user?.name} className="w-full bg-slate-50 border border-transparent focus:border-indigo-500 px-6 py-4 rounded-2xl outline-none font-bold text-slate-900 transition-all" />
+         <div className="bg-white rounded-[3rem] border border-slate-100 p-10 shadow-sm">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {fields.map((f) => (
+                <div key={f.key} className="space-y-3">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-2">{f.label}</label>
+                  <div className="flex items-center bg-slate-50 px-6 py-4 rounded-2xl gap-3">
+                      <f.icon size={18} className="text-indigo-500"/>
+                      <input 
+                        type="text" 
+                        value={formData[f.key] || ''} 
+                        onChange={(e) => setFormData({...formData, [f.key]: e.target.value})}
+                        className="bg-transparent w-full outline-none font-bold text-slate-900" 
+                      />
+                  </div>
                 </div>
-                <div className="space-y-3">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-2">Admin Email</label>
-                  <input type="email" defaultValue={user?.email} disabled className="w-full bg-slate-100 border border-transparent px-6 py-4 rounded-2xl font-bold text-slate-400 cursor-not-allowed" />
-                </div>
-              </div>
+              ))}
+            </div>
 
-              <div className="space-y-3 pt-6 border-t border-slate-50">
-                 <h3 className="font-black text-slate-900 tracking-tight">Security Level</h3>
-                 <p className="text-xs text-slate-400 font-medium">As an administrator, your account is protected by high-level encryption.</p>
-                 <div className="flex items-center gap-4 mt-4">
-                    <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
-                       <div className="w-[90%] h-full bg-emerald-500" />
-                    </div>
-                    <span className="text-[10px] font-black text-emerald-600 uppercase">90% Secure</span>
-                 </div>
-              </div>
-
-              <div className="pt-10 flex justify-end">
-                 <button className="bg-indigo-600 text-white px-10 py-5 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center gap-2 hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all active:scale-95">
-                    <Save size={18} /> Update Settings
-                 </button>
-              </div>
-           </div>
-        </div>
+            <div className="pt-10 flex justify-end">
+               <button onClick={handleUpdate} className="bg-indigo-600 text-white px-10 py-5 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center gap-2 hover:bg-indigo-700 transition-all active:scale-95 shadow-lg shadow-indigo-100">
+                  <Save size={18} /> Save Changes
+               </button>
+            </div>
+         </div>
       </div>
     </DashboardLayout>
   );

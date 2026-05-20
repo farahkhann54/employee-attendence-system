@@ -1,242 +1,120 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import { StatCard } from './components/StatCard';
-
-// Icons
-import { 
-  Users, UserPlus, BarChart3, Loader2, 
-  Clock, Zap, Coffee, ChevronRight, Activity, BellRing,
-  TrendingUp, ArrowUpRight, MoreHorizontal
-} from 'lucide-react';
-
-// Single-File UI Components (Importing from your combined file)
-import { 
-  Card, CardContent, CardHeader, CardTitle, CardDescription,
-  Button, Badge, Avatar, AvatarFallback, 
-  ScrollArea, Separator 
-} from "@/components/ui/dashboard-elements";
-
-// Graphs
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-
-// Hooks & Firebase
-import { useAppSelector } from '@/app/store/hooks';
-import { useAdminAuth } from '@/app/hooks/useAdminAuth';
+import { Users, Activity, Target, Shield, User } from 'lucide-react';
+import { AreaChart, Area, ResponsiveContainer, Tooltip } from 'recharts';
+import { motion } from 'framer-motion';
 import { db } from '@/services/firebase';
-import { collection, query, where, onSnapshot, limit, orderBy } from 'firebase/firestore';
-
-// Animation & Toast
-import { motion, AnimatePresence } from 'framer-motion';
-import { toast } from 'react-hot-toast';
-
-// Dummy Graph Data
-const chartData = [
-  { name: 'Mon', attendance: 82 },
-  { name: 'Tue', attendance: 88 },
-  { name: 'Wed', attendance: 84 },
-  { name: 'Thu', attendance: 90 },
-  { name: 'Fri', attendance: 84 },
-  { name: 'Sat', attendance: 75 },
-  { name: 'Sun', attendance: 40 },
-];
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { useAppSelector } from '@/app/store/hooks';
 
 export default function AdminDashboard() {
-  const { user: authUser, loading: authLoading } = useAppSelector((state) => state.auth);
-  const { adminData, fetching } = useAdminAuth(authUser, authLoading);
-
-  const [stats, setStats] = useState({
-    totalEmployees: 0,
-    pendingLeaves: 0,
-    activeNow: 0,
-    attendanceRate: '84%'
-  });
+  const router = useRouter();
+  const { user } = useAppSelector((state) => state.auth);
+  const [stats, setStats] = useState({ totalEmployees: 0, pendingLeaves: 0, activeNow: 0 });
   const [activeStaff, setActiveStaff] = useState<any[]>([]);
 
   useEffect(() => {
-    if (!authUser || fetching) return;
+    if (!user) return;
     const today = new Date().toISOString().split('T')[0];
 
-    // 1. Notification Listener
-    const qNotify = query(collection(db, "attendance"), where("date", "==", today), orderBy("checkIn", "desc"), limit(1));
-    const unsubNotify = onSnapshot(qNotify, (snapshot) => {
-      snapshot.docChanges().forEach((change) => {
-        if (change.type === "added") {
-          const data = change.doc.data();
-          if (data.userId !== authUser.uid) showActivityToast(data);
-        }
-      });
+    onSnapshot(collection(db, "users"), (snap) => {
+      setStats(prev => ({ ...prev, totalEmployees: snap.docs.filter(d => d.id !== user.uid).length }));
     });
 
-    // 2. Stats & Active Users Logic
-    const unsubUsers = onSnapshot(collection(db, "users"), (snap) => {
-      setStats(prev => ({ ...prev, totalEmployees: snap.size }));
+    onSnapshot(query(collection(db, "leaves"), where("status", "==", "pending")), (snap) => {
+      setStats(prev => ({ ...prev, pendingLeaves: snap.docs.length }));
     });
 
-    const qLeaves = query(collection(db, "leaves"), where("status", "==", "pending"));
-    const unsubLeaves = onSnapshot(qLeaves, (snap) => {
-      setStats(prev => ({ ...prev, pendingLeaves: snap.size }));
-    });
-
-    const qStatus = query(collection(db, "status"));
     const qAttend = query(collection(db, "attendance"), where("date", "==", today));
-
-    const unsubActivity = onSnapshot(qStatus, (statusSnap) => {
-      onSnapshot(qAttend, (attendSnap) => {
-        const statuses = statusSnap.docs.map(d => ({ uid: d.id, ...d.data() as any}));
-        
-        // VERCEL FIX: Explicitly typing the data
-        const attendances = attendSnap.docs.map(d => {
-            const data = d.data() as { 
-                checkIn?: any; 
-                checkOut?: any; 
-                userId?: string; 
-                userName?: string; 
-                breakStart?: any; 
-                breakEnd?: any 
-            };
-            return { id: d.id, ...data };
-        });
-        
-        const activeUsers = attendances
-          .filter((a: any) => a.checkIn && !a.checkOut && a.userId !== authUser.uid)
-          .map(a => {
-            const presence = statuses.find(s => (s as any).uid === a.userId);
-            return {
-              uid: a.userId,
-              name: a.userName || "Team Member",
-              state: (presence as any)?.state || 'offline',
-              onBreak: !!(a.breakStart && !a.breakEnd)
-            };
-          });
-        setActiveStaff(activeUsers);
-        setStats(prev => ({ ...prev, activeNow: activeUsers.length }));
-      });
+    onSnapshot(qAttend, (snap) => {
+      const active = snap.docs
+        .filter(d => d.data().checkIn && !d.data().checkOut && d.data().userId !== user.uid)
+        .map(d => ({ id: d.id, name: d.data().userName || "Staff" }));
+      setActiveStaff(active);
+      setStats(prev => ({ ...prev, activeNow: active.length }));
     });
+  }, [user]);
 
-    return () => { unsubNotify(); unsubUsers(); unsubLeaves(); unsubActivity(); };
-  }, [authUser, fetching]);
-
-  const showActivityToast = (data: any) => {
-    toast.custom((t) => (
-      <div className={`${t.visible ? 'animate-in fade-in' : 'animate-out fade-out'} bg-white border border-slate-100 shadow-2xl p-4 rounded-2xl flex items-center gap-4 max-w-sm pointer-events-auto`}>
-        <div className="bg-indigo-50 p-2 rounded-xl text-indigo-600"><BellRing size={20} /></div>
-        <div>
-          <p className="text-xs font-black text-slate-900 uppercase">{data.userName}</p>
-          <p className="text-[10px] text-slate-500 font-bold">{data.checkOut ? 'Shift Ended' : 'Clocked In'}</p>
-        </div>
-      </div>
-    ));
-  };
-
-  if (authLoading || fetching) return (
-    <div className="h-screen flex flex-col items-center justify-center bg-white">
-      <Loader2 className="w-10 h-10 animate-spin text-indigo-600" />
-      <p className="mt-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Syncing HQ Data...</p>
-    </div>
-  );
+  const navCards = [
+    { label: "Staff", value: stats.totalEmployees, icon: Users, color: "from-indigo-500 to-blue-600", path: "/admin-dashboard/users" },
+    { label: "Active", value: stats.activeNow, icon: Activity, color: "from-emerald-500 to-teal-600", path: "/admin-dashboard/attendance" },
+    { label: "Pending", value: stats.pendingLeaves, icon: Target, color: "from-orange-500 to-amber-600", path: "/admin-dashboard/leaves" },
+    { label: "System", value: "98%", icon: Shield, color: "from-violet-500 to-purple-600", path: "/admin-dashboard" },
+  ];
 
   return (
     <DashboardLayout activeTab="admin-dashboard">
-      {/* HEADER */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-10 gap-6">
+      <div className="flex flex-col gap-6 p-1">
+        
+        {/* HEADER */}
         <div>
-          <div className="flex items-center gap-2 mb-2">
-             <Badge variant="success" className="animate-pulse">Live System</Badge>
-             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Admin Command</span>
-          </div>
-          <h1 className="text-5xl font-black text-slate-900 tracking-tighter">Command <span className="text-indigo-600">Center</span></h1>
+            <h1 className="text-3xl font-black text-slate-900">Admin Command Center</h1>
+            <p className="text-slate-400 font-bold text-xs uppercase tracking-widest mt-1">Real-time operational overview</p>
         </div>
-        <Button size="lg" className="rounded-3xl shadow-2xl shadow-indigo-200 gap-2">
-          <UserPlus size={18} /> Add Personnel
-        </Button>
-      </div>
 
-      {/* STATS */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-        {[
-          { label: "Staff", value: stats.totalEmployees, icon: Users, color: "text-indigo-600 bg-indigo-50" },
-          { label: "Active", value: stats.activeNow, icon: Activity, color: "text-emerald-600 bg-emerald-50" },
-          { label: "Leaves", value: stats.pendingLeaves, icon: Clock, color: "text-orange-600 bg-orange-50" },
-          { label: "Rate", value: stats.attendanceRate, icon: BarChart3, color: "text-purple-600 bg-purple-50" },
-        ].map((s, i) => (
-          <Card key={i} className="border-none shadow-sm hover:shadow-md transition-all rounded-4xl">
-            <CardContent className="p-6 flex items-center gap-5">
-              <div className={`p-4 rounded-2xl ${s.color}`}><s.icon size={24} /></div>
-              <div>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{s.label}</p>
-                <h3 className="text-3xl font-black text-slate-900">{s.value}</h3>
+        {/* STATS GRID */}
+        <div className="grid grid-cols-4 gap-6">
+          {navCards.map((s, i) => (
+            <motion.div whileHover={{ y: -5 }} key={i} onClick={() => router.push(s.path)} 
+              className="cursor-pointer bg-white p-6 rounded-[2rem] border border-slate-100 shadow-xl shadow-slate-100/50">
+              <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${s.color} flex items-center justify-center text-white mb-4`}>
+                <s.icon size={20} />
               </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{s.label}</p>
+              <h3 className="text-2xl font-black text-slate-900 mt-1">{s.value}</h3>
+            </motion.div>
+          ))}
+        </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* GRAPH */}
-        <Card className="lg:col-span-8 rounded-[3rem] border-none shadow-sm overflow-hidden">
-          <CardHeader className="flex flex-row items-center justify-between p-8">
-            <CardTitle>Attendance Insights</CardTitle>
-            <TrendingUp className="text-emerald-500" />
-          </CardHeader>
-          <CardContent className="h-87.5 p-4">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData}>
-                <defs>
-                  <linearGradient id="colorVal" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.1}/>
-                    <stop offset="95%" stopColor="#4f46e5" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f8fafc" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} />
-                <Tooltip contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }} />
-                <Area type="monotone" dataKey="attendance" stroke="#4f46e5" strokeWidth={4} fill="url(#colorVal)" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+        {/* BOTTOM SECTION */}
+        <div className="grid grid-cols-3 gap-6 h-[400px]">
+          
+          <div className="col-span-2 bg-white rounded-[2.5rem] border border-slate-100 shadow-sm p-8 flex flex-col">
+             <h4 className="font-black text-slate-900">Weekly Performance</h4>
+             <div className="flex-1 w-full mt-4">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={[{n:20},{n:50},{n:40},{n:80},{n:60},{n:100}]}>
+                    <defs>
+                      <linearGradient id="colorG" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.2}/>
+                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <Area type="monotone" dataKey="n" stroke="#6366f1" strokeWidth={4} fill="url(#colorG)" />
+                    <Tooltip contentStyle={{borderRadius: '20px', border: 'none'}} />
+                  </AreaChart>
+                </ResponsiveContainer>
+             </div>
+          </div>
 
-        {/* LIVE FEED */}
-        <Card className="lg:col-span-4 rounded-[3rem] border-none shadow-sm flex flex-col">
-          <CardHeader className="p-8"><CardTitle className="text-xl">Staff Presence</CardTitle></CardHeader>
-          <ScrollArea className="flex-1 px-8 pb-8">
-            <div className="space-y-3">
-              {activeStaff.length > 0 ? activeStaff.map((member) => (
-                <div key={member.uid} className="p-4 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Avatar><AvatarFallback>{member.name.substring(0,2).toUpperCase()}</AvatarFallback></Avatar>
+          <div className="col-span-1 bg-slate-900 rounded-[2.5rem] p-6 flex flex-col text-white shadow-xl">
+             <h4 className="font-black mb-6 px-2">Live Staff</h4>
+             <div className="flex-1 overflow-y-auto space-y-3">
+                {activeStaff.length > 0 ? activeStaff.map((staff) => (
+                  <div key={staff.id} className="p-4 bg-white/5 rounded-2xl flex items-center gap-4 border border-white/5">
+                    <div className="h-10 w-10 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400">
+                      <User size={18} />
+                    </div>
                     <div>
-                      <p className="text-xs font-black text-slate-900">{member.name}</p>
-                      <Badge variant="outline" className="text-[8px] py-0">{member.state}</Badge>
+                      <p className="text-sm font-black">{staff.name}</p>
+                      {/* Highlighted Status Check-in */}
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <div className="relative flex h-2 w-2">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                        </div>
+                        <p className="text-[10px] text-emerald-400 font-black uppercase tracking-widest">Check-in</p>
+                      </div>
                     </div>
                   </div>
-                  <div className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-                </div>
-              )) : (
-                <div className="text-center py-10 opacity-30 italic text-sm">No activity detected</div>
-              )}
-            </div>
-          </ScrollArea>
-        </Card>
-      </div>
-
-      {/* QUICK ACTIONS */}
-      <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6 pb-10">
-        <div className="bg-indigo-600 rounded-[2.5rem] p-10 text-white shadow-xl flex justify-between items-center group">
-          <div>
-            <h3 className="text-xl font-black">Pending Leaves</h3>
-            <p className="text-indigo-100 text-sm mt-1">{stats.pendingLeaves} members waiting</p>
+                )) : (
+                  <p className="text-center text-slate-500 text-xs py-10 font-bold">No active activity</p>
+                )}
+             </div>
           </div>
-          <Button variant="secondary" className="rounded-full font-black px-6">Review</Button>
-        </div>
-        <div className="bg-slate-900 rounded-[2.5rem] p-10 text-white shadow-xl flex justify-between items-center">
-          <div>
-            <h3 className="text-xl font-black">Export Logs</h3>
-            <p className="text-slate-400 text-sm mt-1">Download monthly data</p>
-          </div>
-          <div className="h-12 w-12 rounded-2xl bg-slate-800 flex items-center justify-center"><ArrowUpRight /></div>
         </div>
       </div>
     </DashboardLayout>

@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { db } from '@/services/firebase';
 import { collection, query, where, onSnapshot, doc, updateDoc, orderBy } from 'firebase/firestore';
-import { Check, X, Clock, CalendarDays, AlertCircle, History, Inbox, ChevronRight } from 'lucide-react';
+import { Check, X, Clock, Inbox, History, ShieldCheck } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -14,117 +14,91 @@ export default function AdminLeaves() {
 
   useEffect(() => {
     const leavesRef = collection(db, "leaves");
-    
     const q = view === 'pending' 
-      ? query(
-          leavesRef, 
-          where("status", "==", "pending"),
-          orderBy("createdAt", "desc")
-        )
-      : query(
-          leavesRef, 
-          where("status", "in", ["approved", "rejected"]),
-          orderBy("actionedAt", "desc")
-        );
+      ? query(leavesRef, where("status", "==", "pending"), orderBy("createdAt", "desc"))
+      : query(leavesRef, where("status", "in", ["approved", "rejected"]), orderBy("actionedAt", "desc"));
 
-    const unsub = onSnapshot(q, (snap) => {
+    return onSnapshot(q, (snap) => {
       setLeaves(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-    }, (error) => {
-      console.error("Firestore Query Error:", error);
     });
-
-    return () => unsub();
   }, [view]);
 
   const handleStatus = async (id: string, newStatus: 'approved' | 'rejected') => {
     try {
-      const leaveRef = doc(db, "leaves", id);
-      
-      await updateDoc(leaveRef, { 
+      await updateDoc(doc(db, "leaves", id), { 
         status: newStatus,
         actionedAt: new Date(),
-        isPending: false
       });
-
-      toast.success(`Request ${newStatus} ho gayi!`);
-    } catch (e) {
-      toast.error("Status update fail ho gaya.");
+      toast.success(`Leave ${newStatus} successfully.`);
+    } catch {
+      toast.error("Action failed.");
     }
   };
 
   return (
     <DashboardLayout activeTab="manage-leaves">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
+      {/* HEADER SECTION */}
+      <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
         <div>
-          <h1 className="text-4xl font-black text-slate-900 tracking-tight">
-            Leave {view === 'pending' ? 'Requests' : 'Archive'}
-          </h1>
-          <p className="text-slate-500 font-medium mt-1">
-            {view === 'pending' ? 'Manage new requests.' : 'Review past decisions.'}
-          </p>
+          <h1 className="text-3xl font-black text-slate-900 tracking-tighter">Leave Operations</h1>
+          <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-1">System Administration Panel</p>
         </div>
 
-        <div className="bg-slate-100 p-1.5 rounded-3xl flex items-center shadow-inner">
-          <button 
-            onClick={() => setView('pending')}
-            className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${view === 'pending' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-          >
-            <Inbox size={14} /> Pending
-          </button>
-          <button 
-            onClick={() => setView('history')}
-            className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${view === 'history' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-          >
-            <History size={14} /> History
-          </button>
+        <div className="flex bg-slate-100/50 p-1 rounded-2xl border border-slate-200">
+          {['pending', 'history'].map((v) => (
+            <button key={v} onClick={() => setView(v as any)} 
+              className={`px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${view === v ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400'}`}>
+              {v}
+            </button>
+          ))}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6">
+      {/* LIST SECTION */}
+      <div className="space-y-3">
         <AnimatePresence mode="popLayout">
           {leaves.length > 0 ? (
             leaves.map((leave) => (
-              <motion.div 
-                layout
-                key={leave.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20, scale: 0.95 }}
-                className="bg-white p-8 rounded-[2.5rem] border border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-sm hover:shadow-md transition-all group"
-              >
+              <motion.div layout key={leave.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                className="group bg-white p-6 rounded-3xl border border-slate-200 flex items-center justify-between hover:border-indigo-200 transition-colors">
+                
                 <div className="flex items-center gap-6">
-                  <div className={`w-16 h-16 rounded-3xl flex items-center justify-center shadow-inner ${
-                    leave.status === 'approved' ? 'bg-emerald-50 text-emerald-600' : 
-                    leave.status === 'rejected' ? 'bg-rose-50 text-rose-600' : 'bg-amber-50 text-amber-600'
-                  }`}>
-                    {leave.status === 'approved' ? <Check size={28}/> : leave.status === 'rejected' ? <X size={28}/> : <Clock size={28} />}
+                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${leave.status === 'pending' ? 'bg-amber-50 text-amber-500' : 'bg-slate-50 text-slate-400'}`}>
+                    {leave.status === 'pending' ? <Clock size={20} /> : <ShieldCheck size={20} />}
                   </div>
                   <div>
-                    <h4 className="text-xl font-black text-slate-900 tracking-tight">{leave.userName}</h4>
-                    <div className="flex flex-wrap gap-4 mt-2">
-                      <span className="px-3 py-1 bg-slate-50 text-slate-500 text-[9px] font-black uppercase rounded-full">{leave.type}</span>
-                      <span className="px-3 py-1 bg-indigo-50 text-indigo-600 text-[9px] font-black uppercase rounded-full">{leave.startDate} - {leave.endDate}</span>
+                    <h4 className="font-black text-slate-900 text-sm">{leave.userName}</h4>
+                    <div className="flex items-center gap-3 mt-1">
+                      <span className="text-[9px] font-bold text-slate-400 uppercase">{leave.type}</span>
+                      <span className="w-1 h-1 rounded-full bg-slate-300" />
+                      <span className="text-[9px] font-bold text-indigo-500 uppercase">{leave.startDate} to {leave.endDate}</span>
                     </div>
-                    <p className="text-sm text-slate-400 mt-3 font-medium italic">"{leave.reason}"</p>
                   </div>
                 </div>
 
-                {view === 'pending' ? (
-                  <div className="flex items-center gap-3">
-                    <button onClick={() => handleStatus(leave.id, 'rejected')} className="px-6 py-4 bg-rose-50 text-rose-600 rounded-2xl font-black text-[10px] uppercase hover:bg-rose-600 hover:text-white transition-all">Reject</button>
-                    <button onClick={() => handleStatus(leave.id, 'approved')} className="px-8 py-4 bg-emerald-500 text-white rounded-2xl font-black text-[10px] uppercase shadow-lg shadow-emerald-100 hover:bg-emerald-600 transition-all flex items-center gap-2">Approve <ChevronRight size={14}/></button>
-                  </div>
-                ) : (
-                  <div className="text-right px-4">
-                    <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-1">Decision Date</p>
-                    <p className="text-xs font-bold text-slate-500">{leave.actionedAt?.toDate ? leave.actionedAt.toDate().toLocaleDateString() : 'N/A'}</p>
-                  </div>
-                )}
+                <div className="flex items-center gap-6">
+                  <p className="text-xs font-medium text-slate-500 max-w-sm truncate hidden md:block italic">"{leave.reason}"</p>
+                  
+                  {view === 'pending' ? (
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => handleStatus(leave.id, 'rejected')} className="h-10 w-10 flex items-center justify-center rounded-xl bg-rose-50 text-rose-500 hover:bg-rose-100 transition-colors">
+                        <X size={16} />
+                      </button>
+                      <button onClick={() => handleStatus(leave.id, 'approved')} className="h-10 w-10 flex items-center justify-center rounded-xl bg-emerald-50 text-emerald-500 hover:bg-emerald-100 transition-colors">
+                        <Check size={16} />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="px-4 py-1.5 rounded-lg bg-slate-100 text-[10px] font-black uppercase text-slate-500">
+                      {leave.status}
+                    </div>
+                  )}
+                </div>
               </motion.div>
             ))
           ) : (
-            <div className="py-24 text-center border-2 border-dashed border-slate-100 rounded-[3rem]">
-               <p className="text-slate-300 font-black text-xs uppercase tracking-widest">No {view} requests found</p>
+            <div className="py-20 text-center">
+              <p className="text-slate-300 text-xs font-black uppercase tracking-widest">No entries found</p>
             </div>
           )}
         </AnimatePresence>
