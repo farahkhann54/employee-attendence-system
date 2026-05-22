@@ -1,120 +1,203 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import DashboardLayout from '@/components/layout/DashboardLayout';
-import { Users, Activity, Target, Shield, User } from 'lucide-react';
-import { AreaChart, Area, ResponsiveContainer, Tooltip } from 'recharts';
+import { collection, onSnapshot, query, where, type Unsubscribe } from 'firebase/firestore';
 import { motion } from 'framer-motion';
-import { db } from '@/services/firebase';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { Area, AreaChart, ResponsiveContainer, Tooltip } from 'recharts';
+import { Activity, ArrowRight, Shield, Target, User, Users } from 'lucide-react';
+
+import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useAppSelector } from '@/app/store/hooks';
+import { db } from '@/services/firebase';
+
+type ActiveStaff = {
+  id: string;
+  name: string;
+};
 
 export default function AdminDashboard() {
   const router = useRouter();
   const { user } = useAppSelector((state) => state.auth);
   const [stats, setStats] = useState({ totalEmployees: 0, pendingLeaves: 0, activeNow: 0 });
-  const [activeStaff, setActiveStaff] = useState<any[]>([]);
+  const [activeStaff, setActiveStaff] = useState<ActiveStaff[]>([]);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user?.uid) return;
+
     const today = new Date().toISOString().split('T')[0];
+    const unsubscribers: Unsubscribe[] = [];
 
-    onSnapshot(collection(db, "users"), (snap) => {
-      setStats(prev => ({ ...prev, totalEmployees: snap.docs.filter(d => d.id !== user.uid).length }));
-    });
+    unsubscribers.push(
+      onSnapshot(collection(db, 'users'), (snap) => {
+        setStats((prev) => ({ ...prev, totalEmployees: snap.docs.filter((entry) => entry.id !== user.uid).length }));
+      })
+    );
 
-    onSnapshot(query(collection(db, "leaves"), where("status", "==", "pending")), (snap) => {
-      setStats(prev => ({ ...prev, pendingLeaves: snap.docs.length }));
-    });
+    unsubscribers.push(
+      onSnapshot(query(collection(db, 'leaves'), where('status', '==', 'pending')), (snap) => {
+        setStats((prev) => ({ ...prev, pendingLeaves: snap.docs.length }));
+      })
+    );
 
-    const qAttend = query(collection(db, "attendance"), where("date", "==", today));
-    onSnapshot(qAttend, (snap) => {
-      const active = snap.docs
-        .filter(d => d.data().checkIn && !d.data().checkOut && d.data().userId !== user.uid)
-        .map(d => ({ id: d.id, name: d.data().userName || "Staff" }));
-      setActiveStaff(active);
-      setStats(prev => ({ ...prev, activeNow: active.length }));
-    });
+    unsubscribers.push(
+      onSnapshot(query(collection(db, 'attendance'), where('date', '==', today)), (snap) => {
+        const active = snap.docs
+          .filter((entry) => entry.data().checkIn && !entry.data().checkOut && entry.data().userId !== user.uid)
+          .map((entry) => ({ id: entry.id, name: entry.data().userName || 'Staff' }));
+
+        setActiveStaff(active);
+        setStats((prev) => ({ ...prev, activeNow: active.length }));
+      })
+    );
+
+    return () => {
+      unsubscribers.forEach((unsubscribe) => unsubscribe());
+    };
   }, [user]);
 
-  const navCards = [
-    { label: "Staff", value: stats.totalEmployees, icon: Users, color: "from-indigo-500 to-blue-600", path: "/admin-dashboard/users" },
-    { label: "Active", value: stats.activeNow, icon: Activity, color: "from-emerald-500 to-teal-600", path: "/admin-dashboard/attendance" },
-    { label: "Pending", value: stats.pendingLeaves, icon: Target, color: "from-orange-500 to-amber-600", path: "/admin-dashboard/leaves" },
-    { label: "System", value: "98%", icon: Shield, color: "from-violet-500 to-purple-600", path: "/admin-dashboard" },
-  ];
+  const navCards = useMemo(
+    () => [
+      { label: 'Employees', value: stats.totalEmployees, icon: Users, color: 'from-indigo-500 to-violet-600', path: '/admin-dashboard/users' },
+      { label: 'Active now', value: stats.activeNow, icon: Activity, color: 'from-emerald-500 to-teal-600', path: '/admin-dashboard/attendance' },
+      { label: 'Pending leaves', value: stats.pendingLeaves, icon: Target, color: 'from-amber-500 to-orange-600', path: '/admin-dashboard/leaves' },
+      { label: 'System health', value: '98%', icon: Shield, color: 'from-slate-700 to-slate-950', path: '/admin-dashboard' },
+    ],
+    [stats.activeNow, stats.pendingLeaves, stats.totalEmployees]
+  );
 
   return (
     <DashboardLayout activeTab="admin-dashboard">
-      <div className="flex flex-col gap-6 p-1">
-        
-        {/* HEADER */}
-        <div>
-            <h1 className="text-3xl font-black text-slate-900">Admin Command Center</h1>
-            <p className="text-slate-400 font-bold text-xs uppercase tracking-widest mt-1">Real-time operational overview</p>
-        </div>
-
-        {/* STATS GRID */}
-        <div className="grid grid-cols-4 gap-6">
-          {navCards.map((s, i) => (
-            <motion.div whileHover={{ y: -5 }} key={i} onClick={() => router.push(s.path)} 
-              className="cursor-pointer bg-white p-6 rounded-[2rem] border border-slate-100 shadow-xl shadow-slate-100/50">
-              <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${s.color} flex items-center justify-center text-white mb-4`}>
-                <s.icon size={20} />
+      <div className="flex flex-col gap-6">
+        <section className="overflow-hidden rounded-[2rem] border border-white/70 bg-white/75 p-5 shadow-[0_16px_50px_rgba(15,23,42,0.06)] backdrop-blur-xl sm:p-6 lg:p-7">
+          <div className="relative overflow-hidden rounded-[1.75rem] border border-slate-200/60 bg-white/95 p-6 text-slate-950 shadow-[0_20px_60px_rgba(15,23,42,0.06)] sm:p-8">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(99,102,241,0.10),transparent_22%),radial-gradient(circle_at_bottom_left,rgba(34,211,238,0.10),transparent_20%)]" />
+            <div className="relative z-10 flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
+              <div className="max-w-3xl">
+                <div className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-[0.62rem] font-bold uppercase tracking-[0.24em] text-indigo-700">
+                  Live control
+                </div>
+                <p className="mt-4 text-[0.62rem] font-semibold uppercase tracking-[0.34em] text-slate-400">Admin overview</p>
+                <h1 className="mt-3 text-3xl font-black tracking-tight text-slate-950 sm:text-5xl">Command Center</h1>
+                <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-500 sm:text-base">
+                  Keep an eye on the workforce, track pending requests, and move into operational views from a polished central hub.
+                </p>
               </div>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{s.label}</p>
-              <h3 className="text-2xl font-black text-slate-900 mt-1">{s.value}</h3>
-            </motion.div>
-          ))}
-        </div>
 
-        {/* BOTTOM SECTION */}
-        <div className="grid grid-cols-3 gap-6 h-[400px]">
-          
-          <div className="col-span-2 bg-white rounded-[2.5rem] border border-slate-100 shadow-sm p-8 flex flex-col">
-             <h4 className="font-black text-slate-900">Weekly Performance</h4>
-             <div className="flex-1 w-full mt-4">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={[{n:20},{n:50},{n:40},{n:80},{n:60},{n:100}]}>
-                    <defs>
-                      <linearGradient id="colorG" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.2}/>
-                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
-                      </linearGradient>
-                    </defs>
-                    <Area type="monotone" dataKey="n" stroke="#6366f1" strokeWidth={4} fill="url(#colorG)" />
-                    <Tooltip contentStyle={{borderRadius: '20px', border: 'none'}} />
-                  </AreaChart>
-                </ResponsiveContainer>
-             </div>
+              <button
+                onClick={() => router.push('/admin-dashboard/users')}
+                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 py-3.5 text-sm font-semibold text-white shadow-[0_14px_28px_rgba(15,23,42,0.18)] transition-all hover:bg-slate-800"
+              >
+                Open employee list
+                <ArrowRight className="h-4.5 w-4.5" />
+              </button>
+            </div>
           </div>
+        </section>
 
-          <div className="col-span-1 bg-slate-900 rounded-[2.5rem] p-6 flex flex-col text-white shadow-xl">
-             <h4 className="font-black mb-6 px-2">Live Staff</h4>
-             <div className="flex-1 overflow-y-auto space-y-3">
-                {activeStaff.length > 0 ? activeStaff.map((staff) => (
-                  <div key={staff.id} className="p-4 bg-white/5 rounded-2xl flex items-center gap-4 border border-white/5">
-                    <div className="h-10 w-10 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400">
+        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {navCards.map((card, index) => {
+            const Icon = card.icon;
+
+            return (
+              <motion.button
+                key={card.label}
+                whileHover={{ y: -4 }}
+                onClick={() => router.push(card.path)}
+                className="rounded-[1.6rem] border border-white/70 bg-white/80 p-5 text-left shadow-[0_16px_45px_rgba(15,23,42,0.06)] backdrop-blur-xl transition-all"
+              >
+                <div className={`mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${card.color} text-white shadow-lg`}>
+                  <Icon size={20} />
+                </div>
+                <p className="text-[0.62rem] font-semibold uppercase tracking-[0.28em] text-slate-400">{card.label}</p>
+                <h3 className="mt-1 text-2xl font-black tracking-tight text-slate-950">{card.value}</h3>
+                <p className="mt-2 text-sm text-slate-500">Real-time metric {index + 1}</p>
+              </motion.button>
+            );
+          })}
+        </section>
+
+        <div className="grid gap-6 xl:grid-cols-[1.25fr_0.75fr]">
+          <motion.section
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35 }}
+            className="rounded-[2rem] border border-white/70 bg-white/80 p-5 shadow-[0_16px_50px_rgba(15,23,42,0.06)] backdrop-blur-xl sm:p-6"
+          >
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-[0.62rem] font-semibold uppercase tracking-[0.28em] text-slate-400">Performance</p>
+                <h2 className="mt-1 text-xl font-black text-slate-950">Weekly trend</h2>
+              </div>
+              <div className="rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600">
+                Updated live
+              </div>
+            </div>
+
+            <div className="mt-5 h-[320px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={[{ n: 18 }, { n: 42 }, { n: 37 }, { n: 71 }, { n: 63 }, { n: 94 }, { n: 88 }]}>
+                  <defs>
+                    <linearGradient id="adminTrendGlow" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.22} />
+                      <stop offset="95%" stopColor="#4f46e5" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <Area type="monotone" dataKey="n" stroke="#4f46e5" strokeWidth={4} fill="url(#adminTrendGlow)" />
+                  <Tooltip contentStyle={{ borderRadius: '18px', border: 'none', boxShadow: '0 16px 40px rgba(15, 23, 42, 0.12)' }} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </motion.section>
+
+          <motion.section
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35, delay: 0.04 }}
+            className="rounded-[2rem] border border-slate-950 bg-slate-950 p-6 text-white shadow-[0_20px_60px_rgba(15,23,42,0.2)]"
+          >
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-[0.62rem] font-semibold uppercase tracking-[0.28em] text-white/45">Live staff</p>
+                <h2 className="mt-1 text-xl font-black">Currently active</h2>
+              </div>
+              <div className="rounded-full bg-white/10 px-3 py-2 text-xs font-semibold text-white/70">
+                {activeStaff.length} online
+              </div>
+            </div>
+
+            <div className="mt-5 space-y-3">
+              {activeStaff.length > 0 ? (
+                activeStaff.map((staff, index) => (
+                  <motion.div
+                    key={staff.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.25, delay: index * 0.03 }}
+                    className="flex items-center gap-4 rounded-[1.3rem] border border-white/10 bg-white/5 p-4"
+                  >
+                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-indigo-500/20 text-indigo-300">
                       <User size={18} />
                     </div>
                     <div>
-                      <p className="text-sm font-black">{staff.name}</p>
-                      {/* Highlighted Status Check-in */}
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <div className="relative flex h-2 w-2">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                        </div>
-                        <p className="text-[10px] text-emerald-400 font-black uppercase tracking-widest">Check-in</p>
+                      <p className="text-sm font-bold">{staff.name}</p>
+                      <div className="mt-1 flex items-center gap-2">
+                        <span className="relative flex h-2 w-2">
+                          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                          <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+                        </span>
+                        <p className="text-[0.62rem] font-semibold uppercase tracking-[0.24em] text-emerald-300">Checked in</p>
                       </div>
                     </div>
-                  </div>
-                )) : (
-                  <p className="text-center text-slate-500 text-xs py-10 font-bold">No active activity</p>
-                )}
-             </div>
-          </div>
+                  </motion.div>
+                ))
+              ) : (
+                <div className="rounded-[1.3rem] border border-dashed border-white/15 bg-white/5 p-8 text-center text-sm text-white/55">
+                  No active activity right now.
+                </div>
+              )}
+            </div>
+          </motion.section>
         </div>
       </div>
     </DashboardLayout>

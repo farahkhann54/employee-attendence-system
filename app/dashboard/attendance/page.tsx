@@ -5,7 +5,8 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useAppSelector } from '@/app/store/hooks';
 import { db } from '@/services/firebase';
 import { doc, setDoc, updateDoc, serverTimestamp, onSnapshot, getDoc } from 'firebase/firestore';
-import { Clock, Coffee, LogOut, CheckCircle, ArrowRight, Loader2 } from 'lucide-react';
+import { Clock, Coffee, LogOut, CheckCircle, ArrowRight, Loader2, Play, PauseCircle } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function AttendancePage() {
   const { user } = useAppSelector((state) => state.auth);
@@ -13,95 +14,47 @@ export default function AttendancePage() {
   const [actionLoading, setActionLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
 
-  // Date aur Document ID fix
   const today = new Date().toISOString().split('T')[0];
 
   useEffect(() => {
     setMounted(true);
-    
-    if (!user?.uid) {
-        setStatus('idle');
-        return;
-    }
+    if (!user?.uid) { setStatus('idle'); return; }
 
     const docId = `${user.uid}_${today}`;
     const docRef = doc(db, "attendance", docId);
 
-    console.log("Checking Attendance for:", docId);
-
-    // 1. Pehle ek baar Direct Check karein (Manual Fetch)
-    const initialCheck = async () => {
-      try {
-        const snap = await getDoc(docRef);
-        if (snap.exists()) {
-          const data = snap.data();
-          updateUIStatus(data);
-        } else {
-          setStatus('idle');
-        }
-      } catch (err) {
-        console.error("Fetch Error:", err);
-        setStatus('idle');
-      }
-    };
-
-    initialCheck();
-
-    // 2. Phir Real-time Listener lagayein
     const unsubscribe = onSnapshot(docRef, (docSnap) => {
       if (docSnap.exists()) {
-        updateUIStatus(docSnap.data());
+        const data = docSnap.data();
+        if (data.checkOut) setStatus('idle');
+        else if (data.breakStart && !data.breakEnd) setStatus('on-break');
+        else if (data.checkIn) setStatus('checked-in');
+        else setStatus('idle');
       } else {
         setStatus('idle');
       }
-    }, (error) => {
-      console.log("Firebase Error:", error);
     });
 
     return () => unsubscribe();
   }, [user, today]);
 
-  // Status handle karne ka common function
-  const updateUIStatus = (data: any) => {
-    if (data.checkOut) setStatus('idle');
-    else if (data.breakStart && !data.breakEnd) setStatus('on-break');
-    else if (data.checkIn) setStatus('checked-in');
-    else setStatus('idle');
-  };
-
   const handleAction = async (action: string) => {
     if (!user?.uid) return;
     setActionLoading(true);
-    
-    const docId = `${user.uid}_${today}`;
-    const docRef = doc(db, "attendance", docId);
+    const docRef = doc(db, "attendance", `${user.uid}_${today}`);
 
     try {
       if (action === 'check-in') {
-        await setDoc(docRef, {
-          userId: user.uid,
-          userName: user.name || "Employee",
-          date: today,
-          checkIn: serverTimestamp(),
-          status: 'Present',
-          breakStart: null,
-          breakEnd: null,
-          checkOut: null
-        }, { merge: true });
-      } 
-      else if (action === 'break-start') {
+        await setDoc(docRef, { userId: user.uid, userName: user.name || "Employee", date: today, checkIn: serverTimestamp(), status: 'Present' }, { merge: true });
+      } else if (action === 'break-start') {
         await updateDoc(docRef, { breakStart: serverTimestamp(), breakEnd: null });
-      } 
-      else if (action === 'break-end') {
+      } else if (action === 'break-end') {
         await updateDoc(docRef, { breakEnd: serverTimestamp() });
-      } 
-      else if (action === 'check-out') {
+      } else if (action === 'check-out') {
         await updateDoc(docRef, { checkOut: serverTimestamp() });
       }
-      console.log(`${action} Successful`);
     } catch (err) {
       console.error("Action Failed:", err);
-      alert("Error: Check Firebase permissions or connection.");
     } finally {
       setActionLoading(false);
     }
@@ -111,62 +64,76 @@ export default function AttendancePage() {
 
   return (
     <DashboardLayout activeTab="attendance">
-      <div className="space-y-8 max-w-6xl mx-auto">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div>
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Daily Attendance</h1>
-            <p className="text-slate-500 font-medium mt-1">Status for: <span className="font-bold">{today}</span></p>
-          </div>
-          
-          <div className="flex gap-3">
-            {status === 'loading' ? (
-              <div className="px-6 py-4 bg-slate-50 rounded-2xl flex items-center gap-2 text-slate-400 font-bold">
-                <Loader2 className="animate-spin" size={18} /> Loading...
-              </div>
-            ) : (
-              <div className="flex gap-3">
-                {status === 'idle' && (
-                  <button onClick={() => handleAction('check-in')} disabled={actionLoading}
-                    className="bg-slate-900 hover:bg-black text-white px-8 py-4 rounded-2xl font-black flex items-center gap-2 shadow-xl shadow-slate-200">
-                    {actionLoading ? <Loader2 className="animate-spin" /> : <CheckCircle size={18} />} Check In
-                  </button>
-                )}
+      <div className="max-w-4xl mx-auto space-y-8">
+        
+        {/* Header */}
+        <div className="text-center md:text-left">
+          <h1 className="text-4xl font-black text-slate-900 tracking-tighter">Attendance Portal</h1>
+          <p className="text-slate-500 font-medium mt-2">Manage your daily work shift status</p>
+        </div>
 
+        {/* Status Card */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative overflow-hidden bg-white p-8 rounded-3xl border border-slate-100 shadow-xl shadow-slate-100"
+        >
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex items-center gap-4">
+              <div className={`p-4 rounded-2xl ${status === 'checked-in' ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-50 text-slate-400'}`}>
+                <Clock size={32} />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Current Status</p>
+                <h3 className="text-2xl font-black capitalize text-slate-900">{status.replace('-', ' ')}</h3>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <AnimatePresence mode="wait">
+                {status === 'idle' && (
+                  <motion.button whileHover={{ scale: 1.05 }} onClick={() => handleAction('check-in')} className="bg-slate-900 text-white px-8 py-4 rounded-2xl font-bold flex items-center gap-2 hover:bg-slate-800 transition-colors">
+                    <CheckCircle size={20} /> Check In
+                  </motion.button>
+                )}
+                
                 {status === 'checked-in' && (
                   <>
-                    <button onClick={() => handleAction('break-start')} disabled={actionLoading}
-                      className="bg-amber-500 hover:bg-amber-600 text-white px-6 py-4 rounded-2xl font-black flex items-center gap-2">
-                      <Coffee size={18} /> Break
-                    </button>
-                    <button onClick={() => handleAction('check-out')} disabled={actionLoading}
-                      className="bg-rose-500 hover:bg-rose-600 text-white px-6 py-4 rounded-2xl font-black flex items-center gap-2">
-                      <LogOut size={18} /> Check Out
-                    </button>
+                    <motion.button whileHover={{ scale: 1.05 }} onClick={() => handleAction('break-start')} className="bg-amber-500 text-white px-6 py-4 rounded-2xl font-bold flex items-center gap-2 hover:bg-amber-600">
+                      <PauseCircle size={20} /> Break
+                    </motion.button>
+                    <motion.button whileHover={{ scale: 1.05 }} onClick={() => handleAction('check-out')} className="bg-rose-500 text-white px-6 py-4 rounded-2xl font-bold flex items-center gap-2 hover:bg-rose-600">
+                      <LogOut size={20} /> Check Out
+                    </motion.button>
                   </>
                 )}
 
                 {status === 'on-break' && (
-                  <button onClick={() => handleAction('break-end')} disabled={actionLoading}
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-4 rounded-2xl font-black flex items-center gap-2">
-                    <ArrowRight size={18} /> Resume
-                  </button>
+                  <motion.button whileHover={{ scale: 1.05 }} onClick={() => handleAction('break-end')} className="bg-emerald-600 text-white px-8 py-4 rounded-2xl font-bold flex items-center gap-2 hover:bg-emerald-700">
+                    <Play size={20} /> Resume Work
+                  </motion.button>
                 )}
-              </div>
-            )}
+              </AnimatePresence>
+            </div>
           </div>
-        </div>
+        </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-white/85 p-8 rounded-[2.5rem] border border-white/70 shadow-sm backdrop-blur-xl">
-             <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-4"><Clock size={24} /></div>
-             <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">Attendance Status</p>
-             <h3 className={`text-2xl font-black mt-1 ${status === 'checked-in' ? 'text-emerald-600' : 'text-slate-900'}`}>
-               {status === 'loading' ? 'Checking...' : status === 'idle' ? 'Not Checked In' : status.replace('-', ' ')}
-             </h3>
+        {/* Informational Grid */}
+        <div className="grid md:grid-cols-2 gap-6">
+          <div className="bg-white p-6 rounded-3xl border border-slate-100">
+             <h4 className="font-bold text-slate-900 mb-2">Tips for Attendance</h4>
+             <ul className="text-sm text-slate-500 space-y-2 list-disc pl-4">
+               <li>Ensure you check in as soon as you start your day.</li>
+               <li>Always remember to check out to log your total hours accurately.</li>
+               <li>Use the "Break" button to pause your session during lunch.</li>
+             </ul>
+          </div>
+          <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-6 rounded-3xl text-white flex flex-col justify-center">
+             <h4 className="font-bold text-lg">Did you know?</h4>
+             <p className="text-indigo-100 text-sm mt-1">Consistent attendance tracking helps you monitor your productivity patterns over time.</p>
           </div>
         </div>
       </div>
     </DashboardLayout>
   );
 }
-

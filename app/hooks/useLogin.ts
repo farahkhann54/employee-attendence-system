@@ -1,7 +1,9 @@
 ﻿'use client';
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { signInWithEmailAndPassword } from 'firebase/auth';
+import { FirebaseError } from 'firebase/app';
 import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '@/services/firebase';
 import { setLoading, setUser } from '../store/(auth)/authSlice';
@@ -11,8 +13,14 @@ import { UserProfile } from '@/types/auth-types'; // Ensure correct path
 export function useLogin() {
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const [loginError, setLoginError] = useState<string | null>(null);
+
+  const resolveRoleFromEmail = (email: string | null) => {
+    return email?.toLowerCase() === "admin@gmail.com" ? "admin" : "employee";
+  };
 
   const performLogin = async (email: string, password: string) => {
+    setLoginError(null);
     dispatch(setLoading(true));
     try {
       // 1. Firebase Auth SignIn
@@ -23,7 +31,14 @@ export function useLogin() {
       const snap = await getDoc(doc(db, "users", uid));
       
       if (!snap.exists()) {
-        throw new Error("No record found. Please sign up first.");
+        dispatch(setUser({
+          uid,
+          email: userCredential.user.email || email,
+          role: resolveRoleFromEmail(userCredential.user.email || email),
+          isProfileComplete: false,
+        }));
+        router.replace('/profile');
+        return;
       }
 
       // Casting to UserProfile to avoid TypeScript errors
@@ -43,15 +58,24 @@ export function useLogin() {
         router.replace(target);
       }
 
-    } catch (error: any) {
-      let msg = error.message;
-      if (error.code === 'auth/user-not-found') msg = "Pehle signup karein, account nahi mila.";
-      if (error.code === 'auth/wrong-password') msg = "Password galat hai.";
-      alert("Login Error: " + msg);
+    } catch (error: unknown) {
+      let msg = "Unable to sign in right now. Please try again.";
+      const code = error instanceof FirebaseError ? error.code : '';
+
+      if (code === 'auth/user-not-found' || code === 'auth/invalid-credential') {
+        msg = "No account found for this email. Please sign up first.";
+      }
+      if (code === 'auth/wrong-password') {
+        msg = "Incorrect password. Please try again.";
+      }
+      if (code === 'auth/too-many-requests') {
+        msg = "Too many attempts. Please wait a moment and try again.";
+      }
+      setLoginError(msg);
     } finally {
       dispatch(setLoading(false));
     }
   };
 
-  return { performLogin };
+  return { performLogin, loginError, clearLoginError: () => setLoginError(null) };
 }

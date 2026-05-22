@@ -1,46 +1,55 @@
-﻿import { useRouter } from 'next/navigation';
+﻿import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { createUserWithEmailAndPassword, signOut } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
-import { auth, db } from '@/services/firebase';
+import { FirebaseError } from 'firebase/app';
+import { auth } from '@/services/firebase';
 import { useAppDispatch } from '../store/hooks';
 import { logout, setLoading } from '../store/(auth)/authSlice';
 
 export function useSignup() {
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const [signupError, setSignupError] = useState<string | null>(null);
+  const [signupSuccess, setSignupSuccess] = useState(false);
 
   const registerUser = async (email: string, password: string) => {
+    setSignupError(null);
+    setSignupSuccess(false);
     dispatch(setLoading(true));
     try {
-      // 1. Create Auth User
-      const res = await createUserWithEmailAndPassword(auth, email, password);
-      
-      const role = email.toLowerCase() === "admin@gmail.com" ? "admin" : "employee";
-      
-      const userData = {
-        uid: res.user.uid,
-        email: email.toLowerCase(),
-        role: role,
-        isProfileComplete: false,
-        createdAt: new Date().toISOString()
-      };
+      // 1. Create Auth user only. Profile document is created after profile completion.
+      await createUserWithEmailAndPassword(auth, email, password);
 
-      // 2. Save in Firestore
-      await setDoc(doc(db, "users", res.user.uid), userData);
-
-      // 3. Force Logout (Firebase auto-logs in on signup)
+      // 2. Force logout (Firebase auto-logs in on signup)
       await signOut(auth); 
       dispatch(logout()); 
-      
-      alert("Registration Successful! Please login to continue.");
-      router.replace('/login');
 
-    } catch (err: any) {
-      alert("Signup Error: " + err.message);
+      setSignupSuccess(true);
+      window.setTimeout(() => {
+        router.replace('/login?signup=success');
+      }, 2800);
+
+    } catch (err: unknown) {
+      let msg = "Unable to complete signup right now. Please try again.";
+      const code = err instanceof FirebaseError ? err.code : '';
+
+      if (code === 'auth/email-already-in-use') {
+        msg = "This email already exists. Please login instead.";
+      } else if (code === 'auth/invalid-email') {
+        msg = "Please enter a valid email address.";
+      } else if (code === 'auth/weak-password') {
+        msg = "Password is too weak. Use at least 6 characters.";
+      }
+      setSignupError(msg);
     } finally {
       dispatch(setLoading(false));
     }
   };
 
-  return { registerUser };
+  return {
+    registerUser,
+    signupError,
+    signupSuccess,
+    clearSignupError: () => setSignupError(null),
+  };
 }

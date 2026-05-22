@@ -7,8 +7,12 @@
   displayName?: string;
   fatherName?: string;
   cnic?: string;
+  phone?: string;
   dob?: string;
+  address?: string;
+  city?: string;
   jobField?: string;
+  photoURL?: string;
   createdAt?: string;
   updatedAt?: string;
 }

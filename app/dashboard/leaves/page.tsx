@@ -4,17 +4,18 @@ import React, { useState, useEffect, useRef } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useAppSelector } from '@/app/store/hooks';
 import { db } from '@/services/firebase';
-import { collection, addDoc, query, where, onSnapshot, orderBy, serverTimestamp } from 'firebase/firestore';
-import { Send, Loader2, Calendar, Clock, CheckCircle, XCircle, FileText, CheckCircle2 } from 'lucide-react';
+import { collection, query, where, onSnapshot, orderBy, doc, updateDoc, addDoc, serverTimestamp } from 'firebase/firestore';
+import { Loader2, Clock, CheckCircle, XCircle, X, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function LeavesPage() {
   const { user } = useAppSelector((state) => state.auth);
   const [isSaving, setIsSaving] = useState(false);
-  const [showPopup, setShowPopup] = useState(false);
   const [leaveHistory, setLeaveHistory] = useState<any[]>([]);
-  const listRef = useRef<HTMLDivElement>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [selectedLeave, setSelectedLeave] = useState<any | null>(null);
   const [formData, setFormData] = useState({ reason: "", startDate: "", endDate: "", type: "Sick Leave" });
+  const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -27,121 +28,85 @@ export default function LeavesPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
-    
     setIsSaving(true);
-    await addDoc(collection(db, "leaves"), { 
-        userId: user.uid, 
-        userName: user.name, 
-        ...formData, 
-        status: "pending", 
-        createdAt: serverTimestamp() 
-    });
-    
+    if (editingId) {
+      await updateDoc(doc(db, "leaves", editingId), { ...formData });
+    } else {
+      await addDoc(collection(db, "leaves"), { userId: user.uid, userName: user.name, ...formData, status: "pending", createdAt: serverTimestamp() });
+    }
     setIsSaving(false);
+    setEditingId(null);
     setFormData({ reason: "", startDate: "", endDate: "", type: "Sick Leave" });
-    
-    setShowPopup(true);
-    setTimeout(() => setShowPopup(false), 3000);
-    
-    // Smooth scroll to history section
-    setTimeout(() => listRef.current?.scrollIntoView({ behavior: 'smooth' }), 500);
   };
 
-  const getStatusStyles = (status: string) => {
-    if (status === 'approved') return 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20';
-    if (status === 'rejected') return 'bg-rose-500/10 text-rose-500 border-rose-500/20';
-    return 'bg-amber-500/10 text-amber-500 border-amber-500/20';
+  const handleEditClick = (leave: any) => {
+    // PREVENT EDITING IF NOT PENDING
+    if (leave.status !== 'pending') return;
+    
+    setSelectedLeave(null);
+    setEditingId(leave.id);
+    setFormData({ reason: leave.reason, startDate: leave.startDate, endDate: leave.endDate, type: leave.type });
+    formRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   return (
     <DashboardLayout activeTab="leaves">
-      {/* SUCCESS POPUP */}
+      {/* Detail Slide-Over Panel */}
       <AnimatePresence>
-        {showPopup && (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} 
-            className="fixed top-32 right-10 bg-white p-6 rounded-3xl shadow-2xl border border-emerald-100 flex items-center gap-4 z-50">
-            <CheckCircle2 className="text-emerald-500" size={30} />
-            <div>
-              <h4 className="font-black text-slate-900">Submitted!</h4>
-              <p className="text-xs font-bold text-emerald-600">Application successfully sent</p>
-            </div>
+        {selectedLeave && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-slate-900/20 backdrop-blur-sm flex justify-end">
+            <motion.div initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }} className="w-full max-w-md bg-white h-full shadow-2xl p-8 overflow-y-auto">
+              <button onClick={() => setSelectedLeave(null)} className="mb-6 p-2 hover:bg-slate-100 rounded-full"><X size={20} /></button>
+              <h2 className="text-2xl font-black mb-6">Leave Details</h2>
+              <div className="space-y-6">
+                <div><label className="text-[10px] uppercase font-bold text-slate-400">Type</label><p className="font-bold">{selectedLeave.type}</p></div>
+                <div><label className="text-[10px] uppercase font-bold text-slate-400">Duration</label><p className="font-bold">{selectedLeave.startDate} — {selectedLeave.endDate}</p></div>
+                <div><label className="text-[10px] uppercase font-bold text-slate-400">Reason</label><p className="font-bold text-slate-600 leading-relaxed">{selectedLeave.reason}</p></div>
+                <div><label className="text-[10px] uppercase font-bold text-slate-400">Status</label><div className="inline-block px-3 py-1 bg-slate-100 rounded-full text-xs font-black uppercase">{selectedLeave.status}</div></div>
+                
+                {/* CONDITIONAL EDIT BUTTON */}
+                {selectedLeave.status === 'pending' && (
+                  <button onClick={() => handleEditClick(selectedLeave)} className="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold">Edit Request</button>
+                )}
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      <div className="max-w-5xl mx-auto space-y-8">
-        {/* FORM SECTION */}
-        <div className="bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-sm">
-           <div className="mb-8 flex items-center gap-4">
-              <div className="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center text-white"><FileText size={24} /></div>
-              <div>
-                <h1 className="text-2xl font-black text-slate-900 tracking-tight">Apply for Leave</h1>
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Submit your request below</p>
-              </div>
-           </div>
-
-           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <label className="text-[9px] font-black text-slate-400 ml-2 uppercase tracking-widest">Type of Leave</label>
-                <select className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 font-bold outline-none"
-                  value={formData.type} onChange={(e) => setFormData({...formData, type: e.target.value})}>
-                  <option>Sick Leave</option> <option>Casual Leave</option> <option>Emergency Leave</option>
-                </select>
-              </div>
-
-              <div className="flex gap-4">
-                 <div className="flex-1 space-y-2">
-                    <label className="text-[9px] font-black text-slate-400 ml-2 uppercase tracking-widest">Start</label>
-                    <input type="date" required className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 font-bold outline-none"
-                      onChange={(e) => setFormData({...formData, startDate: e.target.value})} value={formData.startDate} />
-                 </div>
-                 <div className="flex-1 space-y-2">
-                    <label className="text-[9px] font-black text-slate-400 ml-2 uppercase tracking-widest">End</label>
-                    <input type="date" required className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 font-bold outline-none"
-                      onChange={(e) => setFormData({...formData, endDate: e.target.value})} value={formData.endDate} />
-                 </div>
-              </div>
-
-              <div className="md:col-span-2 space-y-2">
-                <label className="text-[9px] font-black text-slate-400 ml-2 uppercase tracking-widest">Reason</label>
-                <textarea required rows={3} className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 font-bold outline-none"
-                  placeholder="Explain your reason..." value={formData.reason}
-                  onChange={(e) => setFormData({...formData, reason: e.target.value})} />
-              </div>
-
-              <button disabled={isSaving} className="md:col-span-2 bg-slate-900 text-white py-5 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-indigo-600 transition-all flex items-center justify-center gap-3">
-                {isSaving ? <Loader2 className="animate-spin" /> : <><Send size={16} /> Submit Application</>}
-              </button>
-           </form>
-        </div>
-
-        {/* LIST SECTION */}
-        <div ref={listRef}> 
-          <h2 className="text-xl font-black text-slate-900 mb-6 px-2">History</h2>
-          <div className="space-y-4">
-            {leaveHistory.map((leave, index) => (
-              <motion.div 
-                key={leave.id}
-                initial={index === 0 ? { backgroundColor: "#fffbeb" } : {}}
-                animate={index === 0 ? { backgroundColor: "#ffffff" } : {}}
-                transition={{ duration: 3 }}
-                className="bg-white p-6 rounded-[2rem] border border-slate-100 flex items-center justify-between"
-              >
-                 <div className="flex items-center gap-6">
-                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center border ${getStatusStyles(leave.status)}`}>
-                      {leave.status === 'approved' ? <CheckCircle size={24} /> : leave.status === 'rejected' ? <XCircle size={24} /> : <Clock size={24} />}
-                    </div>
-                    <div>
-                      <p className="font-black text-slate-900">{leave.type}</p>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{leave.startDate} to {leave.endDate}</p>
-                    </div>
-                 </div>
-                 <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border ${getStatusStyles(leave.status)}`}>
-                    {leave.status}
-                 </span>
-              </motion.div>
-            ))}
+      <div className="max-w-4xl mx-auto space-y-4">
+        {/* Form */}
+        <form ref={formRef} onSubmit={handleSubmit} className={`p-6 rounded-2xl border transition-all ${editingId ? 'bg-indigo-50 border-indigo-200' : 'bg-white border-slate-100'}`}>
+          <h2 className="font-black mb-4">{editingId ? "Update Request" : "New Leave Request"}</h2>
+          <div className="grid grid-cols-2 gap-3 mb-3">
+             <select className="col-span-2 bg-white text-sm font-bold p-3 rounded-xl border border-slate-200" value={formData.type} onChange={(e) => setFormData({...formData, type: e.target.value})}>
+                <option>Sick Leave</option><option>Casual Leave</option><option>Emergency</option>
+             </select>
+             <input type="date" required className="bg-white text-sm font-bold p-3 rounded-xl border border-slate-200" onChange={(e) => setFormData({...formData, startDate: e.target.value})} value={formData.startDate} />
+             <input type="date" required className="bg-white text-sm font-bold p-3 rounded-xl border border-slate-200" onChange={(e) => setFormData({...formData, endDate: e.target.value})} value={formData.endDate} />
           </div>
+          <textarea required rows={2} className="w-full bg-white text-sm font-bold p-3 rounded-xl border border-slate-200 mb-3" placeholder="Reason..." value={formData.reason} onChange={(e) => setFormData({...formData, reason: e.target.value})} />
+          <button className={`w-full py-3 rounded-xl font-black text-xs uppercase ${editingId ? 'bg-indigo-600 text-white' : 'bg-slate-900 text-white'}`}>
+            {isSaving ? <Loader2 className="animate-spin" /> : <>{editingId ? "Save Changes" : "Submit"}</>}
+          </button>
+        </form>
+
+        {/* History */}
+        <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
+          {leaveHistory.map((leave) => (
+            <div key={leave.id} onClick={() => setSelectedLeave(leave)} className="px-6 py-4 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors">
+              <div className="flex items-center gap-4">
+                <div className={`p-2 rounded-lg ${leave.status === 'approved' ? 'bg-emerald-100' : leave.status === 'rejected' ? 'bg-rose-100' : 'bg-amber-100'}`}>
+                   {leave.status === 'approved' ? <CheckCircle size={16} /> : leave.status === 'rejected' ? <XCircle size={16} /> : <Clock size={16} />}
+                </div>
+                <div>
+                  <p className="font-black text-sm">{leave.type}</p>
+                  <p className="text-[10px] font-bold text-slate-400">{leave.startDate} to {leave.endDate}</p>
+                </div>
+              </div>
+              <ChevronRight className="text-slate-300" size={20} />
+            </div>
+          ))}
         </div>
       </div>
     </DashboardLayout>

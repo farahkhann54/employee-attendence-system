@@ -2,8 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
-import { Loader2, UserPlus, ShieldCheck } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Loader2 } from 'lucide-react';
+import AuthCard from '../../../components/ui/AuthCard';
 import Link from 'next/link';
 import { useAppSelector } from '@/app/store/hooks';
 import { useSignup } from '@/app/hooks/useSignup';
@@ -12,71 +12,116 @@ import { SignupForm } from './components/SignupForm';
 export default function SignupPage() {
   const router = useRouter();
   const { user, loading } = useAppSelector((state) => state.auth);
-  const { registerUser } = useSignup();
+  const { registerUser, signupError, signupSuccess, clearSignupError } = useSignup();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showTopError, setShowTopError] = useState(false);
+  const [isSubmittingSignup, setIsSubmittingSignup] = useState(false);
+  const loweredSignupError = (signupError || '').toLowerCase();
+  const isAlreadyAccountError = loweredSignupError.includes('already exists') || loweredSignupError.includes('already registered');
 
   useEffect(() => {
-    if (!loading && user) {
-      router.replace(user.role === 'admin' ? '/admin-dashboard' : '/dashboard');
+    if (!loading && user && !isSubmittingSignup && !signupSuccess) {
+      if (!user.isProfileComplete) {
+        router.replace('/profile');
+      } else {
+        router.replace(user.role === 'admin' ? '/admin-dashboard' : '/dashboard');
+      }
     }
-  }, [user, loading, router]);
+  }, [user, loading, router, isSubmittingSignup, signupSuccess]);
 
   const handleSignup = (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmittingSignup(true);
+    setShowTopError(false);
+    clearSignupError();
     registerUser(email, password);
   };
 
-  if (loading || user) {
+  useEffect(() => {
+    if (!signupError || loading) return;
+
+    setIsSubmittingSignup(false);
+    setShowTopError(true);
+    const hideTimer = window.setTimeout(() => setShowTopError(false), 2600);
+    return () => window.clearTimeout(hideTimer);
+  }, [signupError, loading]);
+
+  if ((loading || user) && !signupSuccess && !signupError) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[radial-gradient(circle_at_top,rgba(16,185,129,0.12),transparent_40%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_100%)]">
+      <div className="h-screen flex items-center justify-center bg-[radial-gradient(circle_at_top,rgba(16,185,129,0.12),transparent_40%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_100%)]">
         <Loader2 className="h-10 w-10 animate-spin text-emerald-600" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen px-4 py-10 flex items-center justify-center bg-[radial-gradient(circle_at_top,rgba(16,185,129,0.12),transparent_35%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_100%)]">
-      <motion.div
-        initial={{ opacity: 0, y: 28 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.45 }}
-        className="w-full max-w-5xl overflow-hidden rounded-[2.5rem] border border-white/70 bg-white/80 shadow-[0_30px_80px_rgba(15,23,42,0.12)] backdrop-blur-xl"
-      >
-        <div className="grid lg:grid-cols-2">
-          <div className="hidden lg:flex flex-col justify-between p-12 bg-emerald-600 text-white relative overflow-hidden">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_30%),radial-gradient(circle_at_bottom_left,rgba(15,23,42,0.16),transparent_30%)]" />
-            <div className="relative space-y-6">
-              <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-[10px] font-black uppercase tracking-[0.35em] text-white/75">
-                <ShieldCheck className="h-4 w-4" /> Create Access
-              </div>
-              <div>
-                <h1 className="text-5xl font-black tracking-tight">Join the workspace</h1>
-                <p className="mt-4 max-w-md text-sm leading-6 text-white/80">
-                  Create your account and start using attendance, leave, and profile tools in a clean professional dashboard.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="p-8 sm:p-10 lg:p-12">
-            <div className="mb-10">
-              <p className="text-[10px] font-black uppercase tracking-[0.35em] text-slate-400">Get started</p>
-              <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-950">Create your account</h2>
-              <p className="mt-2 text-sm font-medium text-slate-500">Use a work email and secure password to begin.</p>
-            </div>
-
-            <SignupForm setEmail={setEmail} setPassword={setPassword} onSubmit={handleSignup} />
-
-            <div className="mt-8 flex items-center justify-between gap-4 text-sm">
-              <p className="text-slate-500">Already have an account?</p>
-              <Link href="/login" className="font-semibold text-slate-950 hover:underline">
-                Sign in
-              </Link>
-            </div>
+    <div className="h-screen px-4 py-4 flex items-center justify-center bg-[radial-gradient(circle_at_top,rgba(16,185,129,0.06),transparent_35%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_100%)]">
+      {(signupSuccess || (signupError && showTopError && !loading)) && (
+        <div
+          className={`fixed top-5 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-md rounded-2xl border bg-white shadow-xl p-4 transition-opacity duration-700 ${
+            signupSuccess ? 'border-emerald-200' : 'border-rose-200'
+          } ${signupSuccess || showTopError ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+        >
+          <div className="flex items-start gap-3">
+            {signupSuccess ? (
+              <>
+                <div className="mt-0.5 rounded-lg bg-emerald-100 p-2 text-emerald-600">
+                  <CheckCircle2 className="h-4 w-4" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-emerald-700">Signup successful</p>
+                  <p className="text-sm text-slate-600 mt-1">Your account is ready. Redirecting to login...</p>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="mt-0.5 rounded-lg bg-rose-100 p-2 text-rose-600">
+                  <AlertTriangle className="h-4 w-4" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-rose-700">
+                    {isAlreadyAccountError ? 'Already have an account' : 'Signup failed'}
+                  </p>
+                  <p className="text-sm text-slate-600 mt-1">
+                    {isAlreadyAccountError ? 'This email already exists. Please login instead.' : signupError}
+                  </p>
+                </div>
+              </>
+            )}
           </div>
         </div>
-      </motion.div>
+      )}
+
+      <AuthCard
+        variant="emerald"
+        badgeText="Create Access"
+        leftTitle="Join the workspace"
+        leftSubtitle="Create your account and start using attendance, leave, and profile tools in a clean professional dashboard."
+        headerSubtitle="Get started"
+        headerTitle="Create your account"
+        bottomText="Use a work email and secure password to begin."
+      >
+        <div className="space-y-5">
+
+          <SignupForm
+            setEmail={(val) => {
+              setEmail(val);
+              if (signupError) clearSignupError();
+            }}
+            setPassword={(val) => {
+              setPassword(val);
+              if (signupError) clearSignupError();
+            }}
+            onSubmit={handleSignup}
+          />
+
+          <div className="text-sm flex items-center justify-between">
+            <p className="text-slate-500">Already have an account?</p>
+            <Link href="/login" className="font-semibold text-slate-900 hover:underline">Sign in</Link>
+          </div>
+        </div>
+      </AuthCard>
     </div>
   );
 }
