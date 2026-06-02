@@ -1,12 +1,26 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useAppSelector } from '@/app/store/hooks';
 import { db } from '@/services/firebase';
-import { collection, query, where, onSnapshot, orderBy, doc, updateDoc, addDoc, serverTimestamp } from 'firebase/firestore';
-import { Loader2, Clock, CheckCircle, XCircle, X, ChevronRight } from 'lucide-react';
+import { collection, query, where, onSnapshot, doc, updateDoc, addDoc, serverTimestamp } from 'firebase/firestore';
+import { Loader2, Clock, CheckCircle, XCircle, X, ChevronRight, Inbox } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+
+const STATUS_STYLES: Record<string, { badge: string; icon: string; ring: string }> = {
+  approved: { badge: 'bg-emerald-100 text-emerald-700', icon: 'text-emerald-600', ring: 'bg-emerald-50' },
+  rejected: { badge: 'bg-rose-100 text-rose-700', icon: 'text-rose-600', ring: 'bg-rose-50' },
+  pending: { badge: 'bg-amber-100 text-amber-700', icon: 'text-amber-600', ring: 'bg-amber-50' },
+};
+
+const statusStyle = (status: string) => STATUS_STYLES[status] || STATUS_STYLES.pending;
+
+const StatusIcon = ({ status, size = 16 }: { status: string; size?: number }) => {
+  if (status === 'approved') return <CheckCircle size={size} />;
+  if (status === 'rejected') return <XCircle size={size} />;
+  return <Clock size={size} />;
+};
 
 export default function LeavesPage() {
   const { user } = useAppSelector((state) => state.auth);
@@ -19,54 +33,78 @@ export default function LeavesPage() {
 
   useEffect(() => {
     if (!user) return;
-    const q = query(collection(db, "leaves"), where("userId", "==", user.uid), orderBy("createdAt", "desc"));
-    return onSnapshot(q, (snapshot) => {
-      setLeaveHistory(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-    });
+    const q = query(collection(db, "leaves"), where("userId", "==", user.uid));
+    return onSnapshot(
+      q,
+      (snapshot) => {
+        const items = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })) as any[];
+        items.sort((a, b) => {
+          const ta = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
+          const tb = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
+          return tb - ta;
+        });
+        setLeaveHistory(items);
+      },
+      (error) => console.error("Failed to load leaves:", error),
+    );
   }, [user]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
     setIsSaving(true);
-    if (editingId) {
-      await updateDoc(doc(db, "leaves", editingId), { ...formData });
-    } else {
-      await addDoc(collection(db, "leaves"), { userId: user.uid, userName: user.name, ...formData, status: "pending", createdAt: serverTimestamp() });
+    try {
+      if (editingId) {
+        await updateDoc(doc(db, "leaves", editingId), { ...formData });
+      } else {
+        await addDoc(collection(db, "leaves"), { userId: user.uid, userName: user.name, ...formData, status: "pending", createdAt: serverTimestamp() });
+      }
+      setEditingId(null);
+      setFormData({ reason: "", startDate: "", endDate: "", type: "Sick Leave" });
+    } catch (error) {
+      console.error("Failed to submit leave:", error);
+    } finally {
+      setIsSaving(false);
     }
-    setIsSaving(false);
-    setEditingId(null);
-    setFormData({ reason: "", startDate: "", endDate: "", type: "Sick Leave" });
   };
 
   const handleEditClick = (leave: any) => {
-    // PREVENT EDITING IF NOT PENDING
     if (leave.status !== 'pending') return;
-    
     setSelectedLeave(null);
     setEditingId(leave.id);
     setFormData({ reason: leave.reason, startDate: leave.startDate, endDate: leave.endDate, type: leave.type });
     formRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  const inputClass =
+    "w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-900 outline-none transition-all focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10";
+  const labelClass = "mb-1.5 block text-[10px] font-black uppercase tracking-[0.18em] text-slate-400";
+
   return (
     <DashboardLayout activeTab="leaves">
-      {/* Detail Slide-Over Panel */}
+      {/* Detail slide-over */}
       <AnimatePresence>
         {selectedLeave && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-slate-900/20 backdrop-blur-sm flex justify-end">
-            <motion.div initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }} className="w-full max-w-md bg-white h-full shadow-2xl p-8 overflow-y-auto">
-              <button onClick={() => setSelectedLeave(null)} className="mb-6 p-2 hover:bg-slate-100 rounded-full"><X size={20} /></button>
-              <h2 className="text-2xl font-black mb-6">Leave Details</h2>
-              <div className="space-y-6">
-                <div><label className="text-[10px] uppercase font-bold text-slate-400">Type</label><p className="font-bold">{selectedLeave.type}</p></div>
-                <div><label className="text-[10px] uppercase font-bold text-slate-400">Duration</label><p className="font-bold">{selectedLeave.startDate} — {selectedLeave.endDate}</p></div>
-                <div><label className="text-[10px] uppercase font-bold text-slate-400">Reason</label><p className="font-bold text-slate-600 leading-relaxed">{selectedLeave.reason}</p></div>
-                <div><label className="text-[10px] uppercase font-bold text-slate-400">Status</label><div className="inline-block px-3 py-1 bg-slate-100 rounded-full text-xs font-black uppercase">{selectedLeave.status}</div></div>
-                
-                {/* CONDITIONAL EDIT BUTTON */}
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex justify-end bg-slate-900/30 backdrop-blur-sm" onClick={() => setSelectedLeave(null)}>
+            <motion.div initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }} transition={{ type: "tween", duration: 0.25 }} onClick={(e) => e.stopPropagation()} className="h-full w-full max-w-md overflow-y-auto bg-white p-8 shadow-2xl">
+              <div className="mb-6 flex items-center justify-between">
+                <h2 className="text-2xl font-black text-slate-900">Leave Details</h2>
+                <button onClick={() => setSelectedLeave(null)} className="rounded-full p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"><X size={20} /></button>
+              </div>
+              <div className="space-y-5">
+                <div className={`flex items-center gap-3 rounded-2xl p-4 ${statusStyle(selectedLeave.status).ring}`}>
+                  <span className={statusStyle(selectedLeave.status).icon}><StatusIcon status={selectedLeave.status} size={22} /></span>
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Status</p>
+                    <p className={`text-sm font-black uppercase ${statusStyle(selectedLeave.status).icon}`}>{selectedLeave.status}</p>
+                  </div>
+                </div>
+                <div><label className={labelClass}>Type</label><p className="font-bold text-slate-900">{selectedLeave.type}</p></div>
+                <div><label className={labelClass}>Duration</label><p className="font-bold text-slate-900">{selectedLeave.startDate} — {selectedLeave.endDate}</p></div>
+                <div><label className={labelClass}>Reason</label><p className="font-medium leading-relaxed text-slate-600">{selectedLeave.reason}</p></div>
+
                 {selectedLeave.status === 'pending' && (
-                  <button onClick={() => handleEditClick(selectedLeave)} className="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold">Edit Request</button>
+                  <button onClick={() => handleEditClick(selectedLeave)} className="w-full rounded-xl bg-slate-900 py-3 font-bold text-white transition-all hover:bg-slate-800">Edit Request</button>
                 )}
               </div>
             </motion.div>
@@ -74,39 +112,91 @@ export default function LeavesPage() {
         )}
       </AnimatePresence>
 
-      <div className="max-w-4xl mx-auto space-y-4">
-        {/* Form */}
-        <form ref={formRef} onSubmit={handleSubmit} className={`p-6 rounded-2xl border transition-all ${editingId ? 'bg-indigo-50 border-indigo-200' : 'bg-white border-slate-100'}`}>
-          <h2 className="font-black mb-4">{editingId ? "Update Request" : "New Leave Request"}</h2>
-          <div className="grid grid-cols-2 gap-3 mb-3">
-             <select className="col-span-2 bg-white text-sm font-bold p-3 rounded-xl border border-slate-200" value={formData.type} onChange={(e) => setFormData({...formData, type: e.target.value})}>
-                <option>Sick Leave</option><option>Casual Leave</option><option>Emergency</option>
-             </select>
-             <input type="date" required className="bg-white text-sm font-bold p-3 rounded-xl border border-slate-200" onChange={(e) => setFormData({...formData, startDate: e.target.value})} value={formData.startDate} />
-             <input type="date" required className="bg-white text-sm font-bold p-3 rounded-xl border border-slate-200" onChange={(e) => setFormData({...formData, endDate: e.target.value})} value={formData.endDate} />
-          </div>
-          <textarea required rows={2} className="w-full bg-white text-sm font-bold p-3 rounded-xl border border-slate-200 mb-3" placeholder="Reason..." value={formData.reason} onChange={(e) => setFormData({...formData, reason: e.target.value})} />
-          <button className={`w-full py-3 rounded-xl font-black text-xs uppercase ${editingId ? 'bg-indigo-600 text-white' : 'bg-slate-900 text-white'}`}>
-            {isSaving ? <Loader2 className="animate-spin" /> : <>{editingId ? "Save Changes" : "Submit"}</>}
-          </button>
-        </form>
+      <div className="mx-auto max-w-6xl space-y-8">
+        <div>
+          <h1 className="text-4xl font-black tracking-tight text-slate-900">Leave Management</h1>
+          <p className="mt-1 font-medium text-slate-500">Request time off and track the status of your requests.</p>
+        </div>
 
-        {/* History */}
-        <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
-          {leaveHistory.map((leave) => (
-            <div key={leave.id} onClick={() => setSelectedLeave(leave)} className="px-6 py-4 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors">
-              <div className="flex items-center gap-4">
-                <div className={`p-2 rounded-lg ${leave.status === 'approved' ? 'bg-emerald-100' : leave.status === 'rejected' ? 'bg-rose-100' : 'bg-amber-100'}`}>
-                   {leave.status === 'approved' ? <CheckCircle size={16} /> : leave.status === 'rejected' ? <XCircle size={16} /> : <Clock size={16} />}
+        <div className="grid gap-6 lg:grid-cols-2">
+          {/* Form */}
+          <form ref={formRef} onSubmit={handleSubmit} className={`rounded-3xl border p-6 shadow-sm transition-all sm:p-7 ${editingId ? 'border-indigo-200 bg-indigo-50/60' : 'border-slate-200 bg-white'}`}>
+            <h2 className="mb-5 text-lg font-black text-slate-900">{editingId ? "Update Request" : "New Leave Request"}</h2>
+
+            <div className="space-y-4">
+              <div>
+                <label className={labelClass}>Leave Type</label>
+                <select className={inputClass} value={formData.type} onChange={(e) => setFormData({ ...formData, type: e.target.value })}>
+                  <option>Sick Leave</option>
+                  <option>Casual Leave</option>
+                  <option>Emergency</option>
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelClass}>From</label>
+                  <input type="date" required className={inputClass} onChange={(e) => setFormData({ ...formData, startDate: e.target.value })} value={formData.startDate} />
                 </div>
                 <div>
-                  <p className="font-black text-sm">{leave.type}</p>
-                  <p className="text-[10px] font-bold text-slate-400">{leave.startDate} to {leave.endDate}</p>
+                  <label className={labelClass}>To</label>
+                  <input type="date" required className={inputClass} onChange={(e) => setFormData({ ...formData, endDate: e.target.value })} value={formData.endDate} />
                 </div>
               </div>
-              <ChevronRight className="text-slate-300" size={20} />
+
+              <div>
+                <label className={labelClass}>Reason</label>
+                <textarea required rows={3} className={inputClass} placeholder="Briefly describe your reason..." value={formData.reason} onChange={(e) => setFormData({ ...formData, reason: e.target.value })} />
+              </div>
+
+              <div className="flex items-center gap-3">
+                <button disabled={isSaving} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-slate-900 py-3 text-xs font-black uppercase tracking-widest text-white transition-all hover:bg-slate-800 disabled:opacity-60">
+                  {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : editingId ? "Save Changes" : "Submit Request"}
+                </button>
+                {editingId && (
+                  <button type="button" onClick={() => { setEditingId(null); setFormData({ reason: "", startDate: "", endDate: "", type: "Sick Leave" }); }} className="rounded-xl border border-slate-200 px-5 py-3 text-xs font-black uppercase tracking-widest text-slate-500 transition-all hover:bg-slate-50">
+                    Cancel
+                  </button>
+                )}
+              </div>
             </div>
-          ))}
+          </form>
+
+          {/* History */}
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-7">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-black text-slate-900">Your Requests</h2>
+              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-500">{leaveHistory.length} total</span>
+            </div>
+
+            {leaveHistory.length > 0 ? (
+              <div className="space-y-2">
+                {leaveHistory.map((leave) => (
+                  <div key={leave.id} onClick={() => setSelectedLeave(leave)} className="flex items-center justify-between rounded-2xl border border-slate-100 px-4 py-3 transition-colors hover:border-slate-200 hover:bg-slate-50">
+                    <div className="flex items-center gap-3">
+                      <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${statusStyle(leave.status).ring} ${statusStyle(leave.status).icon}`}>
+                        <StatusIcon status={leave.status} />
+                      </div>
+                      <div>
+                        <p className="text-sm font-black text-slate-900">{leave.type}</p>
+                        <p className="text-[11px] font-semibold text-slate-400">{leave.startDate} → {leave.endDate}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`rounded-full px-2.5 py-1 text-[0.6rem] font-black uppercase tracking-wide ${statusStyle(leave.status).badge}`}>{leave.status}</span>
+                      <ChevronRight className="text-slate-300" size={18} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 py-14 text-center">
+                <Inbox className="mb-3 h-9 w-9 text-slate-300" />
+                <p className="text-sm font-bold text-slate-500">No leave requests yet</p>
+                <p className="mt-1 text-xs text-slate-400">Submit your first request using the form.</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </DashboardLayout>

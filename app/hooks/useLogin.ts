@@ -16,7 +16,7 @@ export function useLogin() {
   const [loginError, setLoginError] = useState<string | null>(null);
 
   const resolveRoleFromEmail = (email: string | null) => {
-    return email?.toLowerCase() === "admin@gmail.com" ? "admin" : "employee";
+    return email?.toLowerCase() === "clark@admin.com" ? "admin" : "employee";
   };
 
   const performLogin = async (email: string, password: string) => {
@@ -31,13 +31,18 @@ export function useLogin() {
       const snap = await getDoc(doc(db, "users", uid));
       
       if (!snap.exists()) {
+        // The hardcoded admin (clark@admin.com) has no profile doc — log straight into the
+        // admin dashboard. Other new accounts go through profile completion first.
+        const role = resolveRoleFromEmail(userCredential.user.email || email);
+        const isAdmin = role === 'admin';
         dispatch(setUser({
           uid,
           email: userCredential.user.email || email,
-          role: resolveRoleFromEmail(userCredential.user.email || email),
-          isProfileComplete: false,
+          name: isAdmin ? 'Admin' : undefined,
+          role,
+          isProfileComplete: isAdmin,
         }));
-        router.replace('/profile');
+        router.replace(isAdmin ? '/admin-dashboard' : '/profile');
         return;
       }
 

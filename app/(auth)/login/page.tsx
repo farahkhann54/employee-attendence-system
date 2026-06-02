@@ -43,14 +43,14 @@ export default function LoginPage() {
 
   if (loading || user) {
     return (
-      <div className="h-screen flex items-center justify-center bg-[radial-gradient(circle_at_top,rgba(37,99,235,0.12),transparent_40%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_100%)]">
+      <div className="h-screen flex items-center justify-center bg-[radial-gradient(circle_at_top,rgba(79,70,229,0.12),transparent_40%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_100%)]">
         <Loader2 className="h-10 w-10 animate-spin text-slate-900" />
       </div>
     );
   }
 
   return (
-    <div className="h-screen px-4 py-4 flex items-center justify-center bg-[radial-gradient(circle_at_top,rgba(37,99,235,0.06),transparent_35%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_100%)]">
+    <div className="h-screen px-4 py-4 flex items-center justify-center bg-[radial-gradient(circle_at_top,rgba(79,70,229,0.06),transparent_35%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_100%)]">
       {loginError && (
         <div
           className={`fixed top-5 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-md rounded-2xl border border-rose-200 bg-white shadow-xl p-4 transition-opacity duration-700 ${

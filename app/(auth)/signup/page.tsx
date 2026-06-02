@@ -47,16 +47,16 @@ export default function SignupPage() {
     return () => window.clearTimeout(hideTimer);
   }, [signupError, loading]);
 
-  if ((loading || user) && !signupSuccess && !signupError) {
+  if ((loading || user) && !signupSuccess && !signupError && !isSubmittingSignup) {
     return (
-      <div className="h-screen flex items-center justify-center bg-[radial-gradient(circle_at_top,rgba(16,185,129,0.12),transparent_40%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_100%)]">
-        <Loader2 className="h-10 w-10 animate-spin text-emerald-600" />
+      <div className="h-screen flex items-center justify-center bg-[radial-gradient(circle_at_top,rgba(79,70,229,0.12),transparent_40%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_100%)]">
+        <Loader2 className="h-10 w-10 animate-spin text-slate-900" />
       </div>
     );
   }
 
   return (
-    <div className="h-screen px-4 py-4 flex items-center justify-center bg-[radial-gradient(circle_at_top,rgba(16,185,129,0.06),transparent_35%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_100%)]">
+    <div className="h-screen px-4 py-4 flex items-center justify-center bg-[radial-gradient(circle_at_top,rgba(79,70,229,0.06),transparent_35%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_100%)]">
       {(signupSuccess || (signupError && showTopError && !loading)) && (
         <div
           className={`fixed top-5 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-md rounded-2xl border bg-white shadow-xl p-4 transition-opacity duration-700 ${
@@ -94,7 +94,7 @@ export default function SignupPage() {
       )}
 
       <AuthCard
-        variant="emerald"
+        variant="slate"
         badgeText="Create Access"
         leftTitle="Join the workspace"
         leftSubtitle="Create your account and start using attendance, leave, and profile tools in a clean professional dashboard."
@@ -105,6 +105,7 @@ export default function SignupPage() {
         <div className="space-y-5">
 
           <SignupForm
+            isLoading={isSubmittingSignup}
             setEmail={(val) => {
               setEmail(val);
               if (signupError) clearSignupError();

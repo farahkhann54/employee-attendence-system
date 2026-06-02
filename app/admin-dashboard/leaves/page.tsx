@@ -3,8 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { db } from '@/services/firebase';
-import { collection, query, where, onSnapshot, doc, updateDoc, orderBy } from 'firebase/firestore';
-import { Check, X, Clock, Inbox, History, ShieldCheck } from 'lucide-react';
+import { collection, query, where, onSnapshot, doc, updateDoc } from 'firebase/firestore';
+import { Check, X, Clock } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -14,13 +14,26 @@ export default function AdminLeaves() {
 
   useEffect(() => {
     const leavesRef = collection(db, "leaves");
-    const q = view === 'pending' 
-      ? query(leavesRef, where("status", "==", "pending"), orderBy("createdAt", "desc"))
-      : query(leavesRef, where("status", "in", ["approved", "rejected"]), orderBy("actionedAt", "desc"));
+    const q = view === 'pending'
+      ? query(leavesRef, where("status", "==", "pending"))
+      : query(leavesRef, where("status", "in", ["approved", "rejected"]));
 
-    return onSnapshot(q, (snap) => {
-      setLeaves(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-    });
+    const toMillis = (value: any) =>
+      value?.toMillis ? value.toMillis() : value ? new Date(value).getTime() : 0;
+
+    return onSnapshot(
+      q,
+      (snap) => {
+        const items = snap.docs.map((d) => ({ id: d.id, ...d.data() })) as any[];
+        items.sort((a, b) =>
+          view === 'pending'
+            ? toMillis(b.createdAt) - toMillis(a.createdAt)
+            : toMillis(b.actionedAt) - toMillis(a.actionedAt),
+        );
+        setLeaves(items);
+      },
+      (error) => console.error("Failed to load leaves:", error),
+    );
   }, [view]);
 
   const handleStatus = async (id: string, newStatus: 'approved' | 'rejected') => {
@@ -63,8 +76,8 @@ export default function AdminLeaves() {
                 className="group bg-white p-6 rounded-3xl border border-slate-200 flex items-center justify-between hover:border-indigo-200 transition-colors">
                 
                 <div className="flex items-center gap-6">
-                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${leave.status === 'pending' ? 'bg-amber-50 text-amber-500' : 'bg-slate-50 text-slate-400'}`}>
-                    {leave.status === 'pending' ? <Clock size={20} /> : <ShieldCheck size={20} />}
+                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${leave.status === 'pending' ? 'bg-amber-50 text-amber-600' : leave.status === 'approved' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
+                    {leave.status === 'pending' ? <Clock size={20} /> : leave.status === 'approved' ? <Check size={20} /> : <X size={20} />}
                   </div>
                   <div>
                     <h4 className="font-black text-slate-900 text-sm">{leave.userName}</h4>
@@ -89,7 +102,7 @@ export default function AdminLeaves() {
                       </button>
                     </div>
                   ) : (
-                    <div className="px-4 py-1.5 rounded-lg bg-slate-100 text-[10px] font-black uppercase text-slate-500">
+                    <div className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase ${leave.status === 'approved' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
                       {leave.status}
                     </div>
                   )}

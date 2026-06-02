@@ -5,7 +5,7 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import { db } from "@/services/firebase";
 import { useAppSelector } from "@/app/store/hooks"; // Added this
 import { collection, onSnapshot } from "firebase/firestore";
-import { Mail, Briefcase, Calendar, MoreVertical, Search } from "lucide-react";
+import { Mail, Briefcase, Calendar, Search } from "lucide-react";
 
 export default function ManageUsers() {
   const [users, setUsers] = useState<any[]>([]);
@@ -28,7 +28,7 @@ export default function ManageUsers() {
 
   return (
     <DashboardLayout activeTab="manage-users">
-      <div className="flex justify-between items-center mb-10 max-w-6xl mx-auto">
+      <div className="mb-10 flex max-w-6xl mx-auto flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-4xl font-black text-slate-900 tracking-tight">
             Personnel Directory
@@ -46,7 +46,7 @@ export default function ManageUsers() {
           <input
             type="text"
             placeholder="Search by name or email..."
-            className="pl-12 pr-6 py-4 bg-white border border-slate-100 rounded-2xl w-80 shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+            className="w-full pl-12 pr-6 py-4 bg-white border border-slate-200 rounded-2xl sm:w-80 shadow-sm focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all"
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
@@ -59,10 +59,16 @@ export default function ManageUsers() {
               <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Employee</th>
               <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Role & Dept</th>
               <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Joined</th>
-              <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50">
+            {filteredUsers.length === 0 && (
+              <tr>
+                <td colSpan={3} className="px-8 py-16 text-center">
+                  <p className="text-xs font-black uppercase tracking-widest text-slate-300">No employees found</p>
+                </td>
+              </tr>
+            )}
             {filteredUsers.map((user) => (
               <tr key={user.id} className="hover:bg-slate-50/30 transition-colors group">
                 <td className="px-8 py-6">
@@ -95,11 +101,6 @@ export default function ManageUsers() {
                         ? new Date(user.createdAt).toLocaleDateString()
                         : "N/A"}
                   </p>
-                </td>
-                <td className="px-8 py-6">
-                  <button className="p-2 hover:bg-white rounded-lg transition-colors text-slate-400 hover:text-indigo-600">
-                    <MoreVertical size={20} />
-                  </button>
                 </td>
               </tr>
             ))}

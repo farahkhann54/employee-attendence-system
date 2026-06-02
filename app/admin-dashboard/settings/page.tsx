@@ -5,7 +5,7 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useAppSelector } from '@/app/store/hooks';
 import { Save, Loader2, User, CreditCard, Phone, MapPin, CheckCircle2, Mail } from 'lucide-react';
 import { db } from '@/services/firebase';
-import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function AdminSettings() {
@@ -16,23 +16,37 @@ export default function AdminSettings() {
 
   useEffect(() => {
     if (!user?.uid) return;
-    const unsub = onSnapshot(doc(db, "users", user.uid), (doc) => {
-      if (doc.exists()) setFormData(doc.data());
-      setLoading(false);
-    });
+    const unsub = onSnapshot(
+      doc(db, "users", user.uid),
+      (snap) => {
+        if (snap.exists()) setFormData(snap.data());
+        else setFormData({ name: user.name || '', email: user.email || '' });
+        setLoading(false);
+      },
+      (error) => {
+        console.error("Failed to load admin profile:", error);
+        setLoading(false); // never leave the page stuck on the spinner
+      },
+    );
     return () => unsub();
-  }, [user?.uid]);
+  }, [user?.uid, user?.name, user?.email]);
 
   const handleUpdate = async () => {
     if (!user?.uid) return;
     try {
-      await updateDoc(doc(db, "users", user.uid), formData);
+      // setDoc + merge creates the doc if missing (the admin is created directly in Firebase
+      // with no profile doc). Keep the admin role + completed flag so it persists on next login.
+      await setDoc(
+        doc(db, "users", user.uid),
+        { ...formData, uid: user.uid, role: 'admin', isProfileComplete: true, updatedAt: new Date().toISOString() },
+        { merge: true },
+      );
       setShowPopup(true);
       setTimeout(() => setShowPopup(false), 3000);
     } catch (error) { console.error(error); }
   };
 
-  if (loading) return <DashboardLayout activeTab="settings"><div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin text-indigo-600" /></div></DashboardLayout>;
+  if (loading) return <DashboardLayout activeTab="settings"><div className="flex items-center justify-center py-32"><Loader2 className="h-8 w-8 animate-spin text-indigo-600" /></div></DashboardLayout>;
 
   const fields = [
     { key: 'name', label: 'Full Name', icon: User },
@@ -88,7 +102,7 @@ export default function AdminSettings() {
             </div>
 
             <div className="pt-10 flex justify-end">
-               <button onClick={handleUpdate} className="bg-indigo-600 text-white px-10 py-5 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center gap-2 hover:bg-indigo-700 transition-all active:scale-95 shadow-lg shadow-indigo-100">
+               <button onClick={handleUpdate} className="bg-slate-900 text-white px-10 py-5 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center gap-2 hover:bg-slate-800 transition-all active:scale-95 shadow-lg shadow-slate-200">
                   <Save size={18} /> Save Changes
                </button>
             </div>

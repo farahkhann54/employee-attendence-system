@@ -20,7 +20,6 @@ import {
   FileText
 } from 'lucide-react';
 import UserAvatar from '@/components/ui/UserAvatar';
-import { Input } from '@/components/ui/input';
 
 interface UserProfile {
   name: string;
@@ -199,9 +198,9 @@ export default function SettingsPage() {
                 <div className="ring-4 ring-slate-50 rounded-full p-1">
                   <UserAvatar name={formData.name || "User"} src={formData.photoURL} size="lg" />
                 </div>
-                <button 
+                <button
                   onClick={() => photoInputRef.current?.click()}
-                  className="absolute bottom-1 right-1 bg-blue-600 text-white p-2.5 rounded-xl shadow-lg hover:scale-110 transition-transform disabled:opacity-50"
+                  className="absolute bottom-1 right-1 bg-indigo-600 text-white p-2.5 rounded-xl shadow-lg hover:scale-110 transition-transform disabled:opacity-50"
                   disabled={isPhotoProcessing}
                 >
                   {isPhotoProcessing ? <Loader2 size={18} className="animate-spin" /> : <Camera size={18} />}
@@ -230,16 +229,16 @@ export default function SettingsPage() {
           <div className="lg:col-span-8 space-y-6">
             <div className="bg-white/85 p-10 rounded-[2.5rem] border border-white/70 shadow-sm backdrop-blur-xl">
               <h3 className="text-lg font-black text-slate-800 mb-8 flex items-center gap-2">
-                <User className="text-blue-600" size={20} /> Personal Information
+                <User className="text-indigo-600" size={20} /> Personal Information
               </h3>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-3">
                   <label className="text-[11px] font-black text-slate-400 ml-1 uppercase tracking-widest">Full Name</label>
                   <div className="relative group">
-                    <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-500 transition-colors" size={18} />
+                    <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-indigo-500 transition-colors" size={18} />
                     <input 
-                      className="w-full border-2 border-slate-50 rounded-2xl pl-12 pr-5 py-4 bg-slate-50 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all font-bold text-slate-700 outline-none"
+                      className="w-full border-2 border-slate-50 rounded-2xl pl-12 pr-5 py-4 bg-slate-50 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-bold text-slate-700 outline-none"
                       value={formData.name}
                       placeholder="Enter your name"
                       onChange={(e) => setFormData({...formData, name: e.target.value})}
@@ -250,9 +249,9 @@ export default function SettingsPage() {
                 <div className="space-y-3">
                   <label className="text-[11px] font-black text-slate-400 ml-1 uppercase tracking-widest">Father Name</label>
                   <div className="relative group">
-                    <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-500 transition-colors" size={18} />
+                    <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-indigo-500 transition-colors" size={18} />
                     <input 
-                      className="w-full border-2 border-slate-50 rounded-2xl pl-12 pr-5 py-4 bg-slate-50 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all font-bold text-slate-700 outline-none"
+                      className="w-full border-2 border-slate-50 rounded-2xl pl-12 pr-5 py-4 bg-slate-50 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-bold text-slate-700 outline-none"
                       value={formData.fatherName}
                       placeholder="Enter father name"
                       onChange={(e) => setFormData({...formData, fatherName: e.target.value})}
@@ -275,9 +274,9 @@ export default function SettingsPage() {
                 <div className="space-y-3">
                   <label className="text-[11px] font-black text-slate-400 ml-1 uppercase tracking-widest">Phone Number</label>
                   <div className="relative group">
-                    <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-500 transition-colors" size={18} />
+                    <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-indigo-500 transition-colors" size={18} />
                     <input 
-                      className="w-full border-2 border-slate-50 rounded-2xl pl-12 pr-5 py-4 bg-slate-50 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all font-bold text-slate-700 outline-none"
+                      className="w-full border-2 border-slate-50 rounded-2xl pl-12 pr-5 py-4 bg-slate-50 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-bold text-slate-700 outline-none"
                       placeholder="+92 3XX XXXXXXX"
                       value={formData.phone}
                       onChange={(e) => setFormData({...formData, phone: e.target.value})}
@@ -288,9 +287,9 @@ export default function SettingsPage() {
                 <div className="space-y-3">
                   <label className="text-[11px] font-black text-slate-400 ml-1 uppercase tracking-widest">CNIC</label>
                   <div className="relative group">
-                    <FileText className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-500 transition-colors" size={18} />
+                    <FileText className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-indigo-500 transition-colors" size={18} />
                     <input 
-                      className="w-full border-2 border-slate-50 rounded-2xl pl-12 pr-5 py-4 bg-slate-50 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all font-bold text-slate-700 outline-none"
+                      className="w-full border-2 border-slate-50 rounded-2xl pl-12 pr-5 py-4 bg-slate-50 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-bold text-slate-700 outline-none"
                       placeholder="Enter CNIC number"
                       value={formData.cnic}
                       onChange={(e) => setFormData({...formData, cnic: e.target.value})}
@@ -314,9 +313,9 @@ export default function SettingsPage() {
                 <div className="space-y-3 md:col-span-2">
                   <label className="text-[11px] font-black text-slate-400 ml-1 uppercase tracking-widest">Address</label>
                   <div className="relative group">
-                    <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-500 transition-colors" size={18} />
+                    <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-indigo-500 transition-colors" size={18} />
                     <input 
-                      className="w-full border-2 border-slate-50 rounded-2xl pl-12 pr-5 py-4 bg-slate-50 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all font-bold text-slate-700 outline-none"
+                      className="w-full border-2 border-slate-50 rounded-2xl pl-12 pr-5 py-4 bg-slate-50 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-bold text-slate-700 outline-none"
                       value={formData.address}
                       placeholder="Enter your address"
                       onChange={(e) => setFormData({...formData, address: e.target.value})}
@@ -329,7 +328,7 @@ export default function SettingsPage() {
                 <button 
                   onClick={handleUpdate}
                   disabled={isSaving}
-                  className="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white px-12 py-5 rounded-[1.5rem] font-black text-xs uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 shadow-xl active:scale-95 disabled:bg-slate-300"
+                  className="w-full md:w-auto bg-slate-900 hover:bg-slate-800 text-white px-12 py-5 rounded-[1.5rem] font-black text-xs uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 shadow-xl active:scale-95 disabled:bg-slate-300"
                 >
                   {isSaving ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
                   Save Profile Changes

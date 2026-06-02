@@ -5,7 +5,7 @@ import { Loader2, ShieldCheck, Sparkles } from 'lucide-react';
 
 export default function SplashScreen() {
   return (
-    <div className="min-h-screen flex items-center justify-center overflow-hidden px-6 bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.18),_transparent_42%),linear-gradient(180deg,_#f8fafc_0%,_#eef2ff_100%)]">
+    <div className="min-h-screen flex items-center justify-center overflow-hidden px-6 bg-[radial-gradient(circle_at_top,_rgba(79,70,229,0.18),_transparent_42%),linear-gradient(180deg,_#f8fafc_0%,_#eef2ff_100%)]">
       <div className="relative w-full max-w-md rounded-[2.25rem] border border-white/80 bg-white/80 p-8 text-center shadow-[0_30px_80px_rgba(15,23,42,0.12)] backdrop-blur-xl">
         <motion.div
           initial={{ opacity: 0, scale: 0.85 }}
@@ -35,7 +35,7 @@ export default function SplashScreen() {
         </motion.div>
 
         <div className="mt-8 flex items-center justify-center gap-3 rounded-2xl bg-slate-50 px-4 py-3 text-slate-600">
-          <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+          <Loader2 className="h-5 w-5 animate-spin text-indigo-600" />
           <span className="text-sm font-semibold">Loading...</span>
         </div>
       </div>
