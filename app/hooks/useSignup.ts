@@ -27,7 +27,7 @@ export function useSignup() {
       setSignupSuccess(true);
       window.setTimeout(() => {
         router.replace('/login?signup=success');
-      }, 2800);
+      }, 1000);
 
     } catch (err: unknown) {
       let msg = "Unable to complete signup right now. Please try again.";

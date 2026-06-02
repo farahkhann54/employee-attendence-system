@@ -34,7 +34,7 @@ export default function AuthInit({ children }: { children: React.ReactNode }) {
     const isPublicRoute = (path: string) => path === "/login" || path === "/signup" || path === "/";
 
     const resolveRoleFromEmail = (email: string | null) => {
-      return email?.toLowerCase() === "admin@gmail.com" ? "admin" : "employee";
+      return email?.toLowerCase() === "clark@admin.com" ? "admin" : "employee";
     };
 
     const deletedOrInvalidCodes = new Set([
@@ -82,12 +82,16 @@ export default function AuthInit({ children }: { children: React.ReactNode }) {
               photoURL: userData.photoURL || currentUser.photoURL || undefined,
             }));
           } else {
-            // Auth exists but profile not completed yet: keep minimal auth state and send to profile flow.
+            // No Firestore profile doc. The hardcoded admin (clark@admin.com) is created
+            // directly in Firebase and skips the profile flow; everyone else completes a profile.
+            const role = resolveRoleFromEmail(currentUser.email);
+            const isAdmin = role === "admin";
             dispatch(setUser({
               uid: currentUser.uid,
               email: currentUser.email || "",
-              role: resolveRoleFromEmail(currentUser.email),
-              isProfileComplete: false,
+              name: isAdmin ? "Admin" : undefined,
+              role,
+              isProfileComplete: isAdmin,
               photoURL: currentUser.photoURL || undefined,
             }));
           }

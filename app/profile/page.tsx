@@ -154,7 +154,7 @@ export default function ProfilePage() {
     setIsSaving(true);
 
     try {
-      const resolvedRole = (user?.email || '').toLowerCase() === 'admin@gmail.com' ? 'admin' : 'employee';
+      const resolvedRole = (user?.email || '').toLowerCase() === 'clark@admin.com' ? 'admin' : 'employee';
       const finalData = {
         uid: user!.uid,
         email: user!.email,
@@ -197,7 +197,7 @@ export default function ProfilePage() {
     setIsSaving(true);
 
     try {
-      const resolvedRole = (user?.email || '').toLowerCase() === 'admin@gmail.com' ? 'admin' : 'employee';
+      const resolvedRole = (user?.email || '').toLowerCase() === 'clark@admin.com' ? 'admin' : 'employee';
       const fallbackName = formData.name.trim() || user?.displayName?.trim() || user?.email?.split('@')[0] || 'User';
       const skipData = {
         uid: user!.uid,
@@ -258,11 +258,11 @@ export default function ProfilePage() {
   return (
     <div
       dir="ltr"
-      className="relative flex h-dvh w-full items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(15,23,42,0.06),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(59,130,246,0.08),transparent_30%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_100%)] px-2 py-2 sm:px-4 sm:py-4 lg:px-6 lg:py-6"
+      className="relative flex h-dvh w-full items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(15,23,42,0.06),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(79,70,229,0.08),transparent_30%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_100%)] px-2 py-2 sm:px-4 sm:py-4 lg:px-6 lg:py-6"
     >
       <div className="flex h-full w-full max-w-4xl items-center justify-center overflow-hidden rounded-[2.2rem] border border-white/70 bg-white/90 shadow-[0_30px_100px_rgba(15,23,42,0.16)] backdrop-blur-xl">
         <div className="flex h-full w-full flex-col overflow-hidden bg-slate-50/90">
-          <div className="border-b border-slate-200/70 bg-[linear-gradient(135deg,#020617_0%,#0f172a_45%,#2563eb_100%)] px-4 py-2 text-white sm:px-6 sm:py-2.5">
+          <div className="border-b border-slate-200/70 bg-[linear-gradient(135deg,#020617_0%,#0f172a_45%,#4f46e5_100%)] px-4 py-2 text-white sm:px-6 sm:py-2.5">
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="text-[0.63rem] font-semibold uppercase tracking-[0.28em] text-white/60">Profile setup</p>
@@ -274,7 +274,7 @@ export default function ProfilePage() {
                 <p className="text-[0.56rem] font-semibold uppercase tracking-[0.22em] text-white/55">Completion</p>
                 <div className="mt-1.5 flex items-center gap-3">
                   <div className="h-2 w-24 overflow-hidden rounded-full bg-white/12 sm:w-28">
-                    <div className="h-full rounded-full bg-linear-to-r from-cyan-300 to-emerald-300" style={{ width: `${completionPercent}%` }} />
+                    <div className="h-full rounded-full bg-linear-to-r from-indigo-400 to-indigo-200" style={{ width: `${completionPercent}%` }} />
                   </div>
                   <span className="text-xs font-semibold text-white/85">{completionPercent}%</span>
                 </div>

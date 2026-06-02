@@ -4,7 +4,7 @@ import React, { useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { signOut } from 'firebase/auth';
-import { CalendarDays, ChevronRight, Clock3, LayoutDashboard, LogOut, Settings, ShieldCheck, Sparkles, Users } from 'lucide-react';
+import { CalendarDays, ChevronRight, Clock3, FileText, LayoutDashboard, Loader2, LogOut, Settings, ShieldCheck, Sparkles, Users } from 'lucide-react';
 
 import { useAppDispatch, useAppSelector } from '@/app/store/hooks';
 import { logout } from '@/app/store/(auth)/authSlice';
@@ -52,6 +52,7 @@ export default function DashboardLayout({ children, activeTab }: LayoutProps) {
           { id: 'manage-users', label: 'Employees', shortLabel: 'People', icon: Users, path: '/admin-dashboard/users' },
           { id: 'manage-attendance', label: 'Attendance', shortLabel: 'Time', icon: Clock3, path: '/admin-dashboard/attendance' },
           { id: 'manage-leaves', label: 'Leaves', shortLabel: 'Leave', icon: CalendarDays, path: '/admin-dashboard/leaves' },
+          { id: 'manage-reports', label: 'Daily Reports', shortLabel: 'Reports', icon: FileText, path: '/admin-dashboard/reports' },
           { id: 'settings', label: 'Settings', shortLabel: 'Prefs', icon: Settings, path: '/admin-dashboard/settings' },
         ]
       : [
@@ -66,17 +67,17 @@ export default function DashboardLayout({ children, activeTab }: LayoutProps) {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-950 text-white">
-        <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-sm font-medium backdrop-blur-xl">
-          <Sparkles className="h-5 w-5 animate-pulse text-cyan-300" />
-          Loading workspace...
+      <div className="flex min-h-screen items-center justify-center bg-slate-50">
+        <div className="flex items-center gap-3 text-slate-500">
+          <Loader2 className="h-6 w-6 animate-spin text-indigo-600" />
+          <span className="text-sm font-medium">Loading...</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(79,70,229,0.12),transparent_28%),radial-gradient(circle_at_top_right,rgba(14,165,233,0.10),transparent_26%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_100%)] text-slate-900">
+    <div className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(79,70,229,0.12),transparent_28%),radial-gradient(circle_at_top_right,rgba(99,102,241,0.10),transparent_26%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_100%)] text-slate-900">
       <svg className="pointer-events-none absolute left-0 top-0 hidden w-[34rem] lg:block" viewBox="0 0 680 680" fill="none" aria-hidden="true">
         <defs>
           <linearGradient id="layoutShellGlow" x1="0" y1="0" x2="1" y2="1">
@@ -192,31 +193,7 @@ export default function DashboardLayout({ children, activeTab }: LayoutProps) {
           </header>
 
           <main className="relative flex-1 overflow-y-auto px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
-            <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-6">
-              <section className="overflow-hidden rounded-[2rem] border border-white/70 bg-white/75 p-5 shadow-[0_16px_50px_rgba(15,23,42,0.06)] backdrop-blur-xl sm:p-6 lg:p-7">
-                <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-                  <div className="max-w-3xl">
-                    <p className="text-[0.62rem] font-semibold uppercase tracking-[0.34em] text-slate-400">Dashboard</p>
-                    <h3 className="mt-2 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
-                      A clean command surface for your team.
-                    </h3>
-                    <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-500 sm:text-base">
-                      Navigate attendance, leaves, settings, and live operations from one calm, high-clarity workspace.
-                    </p>
-                  </div>
-
-                  <div className="flex shrink-0 items-center gap-3 rounded-[1.5rem] border border-slate-200 bg-white px-4 py-3 shadow-sm">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-950 text-white">
-                      <ShieldCheck className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <p className="text-[0.62rem] font-semibold uppercase tracking-[0.24em] text-slate-400">Session</p>
-                      <p className="text-sm font-bold text-slate-900">Secure and live</p>
-                    </div>
-                  </div>
-                </div>
-              </section>
-
+            <div className="mx-auto w-full max-w-[1600px]">
               <div className="min-w-0">{children}</div>
             </div>
           </main>

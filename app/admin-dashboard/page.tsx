@@ -4,8 +4,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { collection, onSnapshot, query, where, type Unsubscribe } from 'firebase/firestore';
 import { motion } from 'framer-motion';
-import { Area, AreaChart, ResponsiveContainer, Tooltip } from 'recharts';
-import { Activity, ArrowRight, Shield, Target, User, Users } from 'lucide-react';
+import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Activity, ArrowRight, Target, User, Users } from 'lucide-react';
 
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useAppSelector } from '@/app/store/hooks';
@@ -21,6 +21,7 @@ export default function AdminDashboard() {
   const { user } = useAppSelector((state) => state.auth);
   const [stats, setStats] = useState({ totalEmployees: 0, pendingLeaves: 0, activeNow: 0 });
   const [activeStaff, setActiveStaff] = useState<ActiveStaff[]>([]);
+  const [weeklyData, setWeeklyData] = useState<{ day: string; checkIns: number }[]>([]);
 
   useEffect(() => {
     if (!user?.uid) return;
@@ -51,6 +52,29 @@ export default function AdminDashboard() {
       })
     );
 
+    // Real weekly check-in counts across the whole team (last 7 days).
+    unsubscribers.push(
+      onSnapshot(collection(db, 'attendance'), (snap) => {
+        const perDay = new Map<string, number>();
+        snap.docs.forEach((entry) => {
+          const data = entry.data();
+          if (data.checkIn && data.date) {
+            perDay.set(data.date, (perDay.get(data.date) || 0) + 1);
+          }
+        });
+
+        const labels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const last7 = Array.from({ length: 7 }, (_, i) => {
+          const date = new Date();
+          date.setDate(date.getDate() - (6 - i));
+          const key = date.toISOString().split('T')[0];
+          return { day: labels[date.getDay()], checkIns: perDay.get(key) || 0 };
+        });
+
+        setWeeklyData(last7);
+      })
+    );
+
     return () => {
       unsubscribers.forEach((unsubscribe) => unsubscribe());
     };
@@ -58,10 +82,9 @@ export default function AdminDashboard() {
 
   const navCards = useMemo(
     () => [
-      { label: 'Employees', value: stats.totalEmployees, icon: Users, color: 'from-indigo-500 to-violet-600', path: '/admin-dashboard/users' },
-      { label: 'Active now', value: stats.activeNow, icon: Activity, color: 'from-emerald-500 to-teal-600', path: '/admin-dashboard/attendance' },
-      { label: 'Pending leaves', value: stats.pendingLeaves, icon: Target, color: 'from-amber-500 to-orange-600', path: '/admin-dashboard/leaves' },
-      { label: 'System health', value: '98%', icon: Shield, color: 'from-slate-700 to-slate-950', path: '/admin-dashboard' },
+      { label: 'Employees', value: stats.totalEmployees, icon: Users, color: 'from-indigo-500 to-indigo-700', path: '/admin-dashboard/users' },
+      { label: 'Active now', value: stats.activeNow, icon: Activity, color: 'from-emerald-500 to-emerald-700', path: '/admin-dashboard/attendance' },
+      { label: 'Pending leaves', value: stats.pendingLeaves, icon: Target, color: 'from-amber-500 to-amber-600', path: '/admin-dashboard/leaves' },
     ],
     [stats.activeNow, stats.pendingLeaves, stats.totalEmployees]
   );
@@ -71,7 +94,7 @@ export default function AdminDashboard() {
       <div className="flex flex-col gap-6">
         <section className="overflow-hidden rounded-[2rem] border border-white/70 bg-white/75 p-5 shadow-[0_16px_50px_rgba(15,23,42,0.06)] backdrop-blur-xl sm:p-6 lg:p-7">
           <div className="relative overflow-hidden rounded-[1.75rem] border border-slate-200/60 bg-white/95 p-6 text-slate-950 shadow-[0_20px_60px_rgba(15,23,42,0.06)] sm:p-8">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(99,102,241,0.10),transparent_22%),radial-gradient(circle_at_bottom_left,rgba(34,211,238,0.10),transparent_20%)]" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(99,102,241,0.10),transparent_22%),radial-gradient(circle_at_bottom_left,rgba(79,70,229,0.08),transparent_20%)]" />
             <div className="relative z-10 flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
               <div className="max-w-3xl">
                 <div className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-[0.62rem] font-bold uppercase tracking-[0.24em] text-indigo-700">
@@ -95,7 +118,7 @@ export default function AdminDashboard() {
           </div>
         </section>
 
-        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {navCards.map((card, index) => {
             const Icon = card.icon;
 
@@ -134,19 +157,30 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            <div className="mt-5 h-[320px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={[{ n: 18 }, { n: 42 }, { n: 37 }, { n: 71 }, { n: 63 }, { n: 94 }, { n: 88 }]}>
-                  <defs>
-                    <linearGradient id="adminTrendGlow" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.22} />
-                      <stop offset="95%" stopColor="#4f46e5" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <Area type="monotone" dataKey="n" stroke="#4f46e5" strokeWidth={4} fill="url(#adminTrendGlow)" />
-                  <Tooltip contentStyle={{ borderRadius: '18px', border: 'none', boxShadow: '0 16px 40px rgba(15, 23, 42, 0.12)' }} />
-                </AreaChart>
-              </ResponsiveContainer>
+            <div className="mt-5 h-[320px] w-full min-w-0">
+              {weeklyData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={weeklyData}>
+                    <defs>
+                      <linearGradient id="adminTrendGlow" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.22} />
+                        <stop offset="95%" stopColor="#4f46e5" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <XAxis dataKey="day" stroke="rgba(15,23,42,0.4)" style={{ fontSize: '12px', fontWeight: 600 }} />
+                    <YAxis allowDecimals={false} stroke="rgba(15,23,42,0.4)" style={{ fontSize: '12px' }} />
+                    <Area type="monotone" dataKey="checkIns" stroke="#4f46e5" strokeWidth={4} fill="url(#adminTrendGlow)" />
+                    <Tooltip
+                      contentStyle={{ borderRadius: '18px', border: 'none', boxShadow: '0 16px 40px rgba(15, 23, 42, 0.12)' }}
+                      formatter={(value) => [value, 'Check-ins']}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex h-full items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 text-sm font-medium text-slate-400">
+                  Loading trend…
+                </div>
+              )}
             </div>
           </motion.section>
 

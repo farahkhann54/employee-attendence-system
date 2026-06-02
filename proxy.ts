@@ -1,9 +1,6 @@
 import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
 
-export function proxy(request: NextRequest) {
-  const token = request.cookies.get('firebase-token')?.value;
-  const { pathname } = request.nextUrl;
+export function proxy() {
 
   // Simple Redirect logic agar zaroorat ho (Optional)
   // if (!token && pathname.startsWith('/admin-dashboard')) {

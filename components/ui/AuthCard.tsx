@@ -20,7 +20,7 @@ const HeroSVG = ({ variant = "emerald" }: { variant?: "emerald" | "slate" }) => 
     <defs>
       <linearGradient id="heroGrad" x1="0" x2="1">
         <stop offset="0%" stopColor={variant === "emerald" ? "#10B981" : "#0f172a"} stopOpacity="0.95" />
-        <stop offset="100%" stopColor={variant === "emerald" ? "#34D399" : "#3b82f6"} stopOpacity="0.75" />
+        <stop offset="100%" stopColor={variant === "emerald" ? "#34D399" : "#4f46e5"} stopOpacity="0.75" />
       </linearGradient>
     </defs>
     <rect width="100%" height="100%" fill="url(#heroGrad)" rx="24" />

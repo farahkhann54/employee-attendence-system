@@ -54,6 +54,13 @@ export default function AdminAttendance() {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50">
+            {filteredLogs.length === 0 && (
+              <tr>
+                <td colSpan={5} className="px-8 py-16 text-center">
+                  <p className="text-xs font-black uppercase tracking-widest text-slate-300">No attendance records yet</p>
+                </td>
+              </tr>
+            )}
             {filteredLogs.map((log) => (
               <tr key={log.id} className="hover:bg-slate-50/30 transition-all">
                 <td className="px-8 py-6">
